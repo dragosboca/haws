@@ -13,7 +13,8 @@ builds:
     goos:
       - linux
       - darwin
-    main: cmd
+      - windows
+    main: ./cmd
     binary: haws
     goarch:
       - amd64
@@ -22,7 +23,7 @@ builds:
 release:
   github:
     owner: dragosboca
-    repo: haws
+    name: haws
 
 archives:
   - replacements:
