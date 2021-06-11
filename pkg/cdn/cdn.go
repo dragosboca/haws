@@ -1,4 +1,4 @@
-package haws
+package cdn
 
 import (
 	"fmt"

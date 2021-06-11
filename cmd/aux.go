@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"haws/pkg/bucket"
+	"haws/pkg/cdn"
 	"haws/pkg/certificate"
-	"haws/pkg/haws"
 	"haws/pkg/stack"
 	"os"
 	"strings"
@@ -77,7 +77,7 @@ func deployBucket(bucketName string, bucketStackName string, region *string) (st
 }
 
 func deployCloudFront(s3Output stack.Output, cOutput stack.Output, rec string, zoneId *string, path *string, cloudfrontStackName string, region *string) (stack.Output, string, error) {
-	t := haws.New(s3Output["OAI"], s3Output["BucketDomain"], cOutput["CertificateArn"], rec, *zoneId, *path)
+	t := cdn.New(s3Output["OAI"], s3Output["BucketDomain"], cOutput["CertificateArn"], rec, *zoneId, *path)
 	st := stack.New(cloudfrontStackName, *region, t, nil)
 	err := st.Deploy()
 	if err != nil {
