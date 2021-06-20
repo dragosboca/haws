@@ -53,7 +53,6 @@ func templateJson(t Template) (string, error) {
 		fmt.Printf("Create template error: %s\n", err)
 		return "", err
 	}
-	//log.Println(string(templateBody))
 	return string(templateBody), nil
 }
 
@@ -175,4 +174,16 @@ func (st *Stack) Outputs() (Output, error) {
 	}
 
 	return ret, nil
+}
+
+func (st *Stack) Run() (Output, error) {
+	err := st.Deploy()
+	if err != nil {
+		return nil, err
+	}
+	o, err := st.Outputs()
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }

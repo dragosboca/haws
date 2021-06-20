@@ -1,19 +1,27 @@
 package bucket
 
 import (
+	"fmt"
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/s3"
 	"haws/pkg/customtags"
+	"haws/pkg/stack"
 )
 
 type Bucket struct {
-	name string
+	name   string
+	prefix string
+	domain string
+	region string
 }
 
-func New(name string) *Bucket {
+func New(prefix string, region string, domain string, name string) *Bucket {
 	return &Bucket{
-		name: name,
+		name:   name,
+		prefix: prefix,
+		domain: domain,
+		region: region,
 	}
 }
 
@@ -50,9 +58,10 @@ func (d *document) addStatement(sid string, s statement) {
 func (b *Bucket) Build() *cloudformation.Template {
 	t := cloudformation.NewTemplate()
 
+	// OAI
 	t.Resources["oai"] = &cloudfront.CloudFrontOriginAccessIdentity{
 		CloudFrontOriginAccessIdentityConfig: &cloudfront.CloudFrontOriginAccessIdentity_CloudFrontOriginAccessIdentityConfig{
-			Comment: "haws oai",
+			Comment: fmt.Sprintf("haws oai for %s", b.name),
 		},
 	}
 	t.Outputs["OAI"] = cloudformation.Output{
@@ -60,6 +69,7 @@ func (b *Bucket) Build() *cloudformation.Template {
 		Description: "Origin Access Identity for Cloudfront",
 	}
 
+	// Bucket Itself
 	t.Resources["bucket"] = &s3.Bucket{
 		AccessControl:     "Private",
 		BucketName:        b.name,
@@ -70,7 +80,12 @@ func (b *Bucket) Build() *cloudformation.Template {
 		Value:       cloudformation.GetAtt("bucket", "DomainName"),
 		Description: "The domain name of the bucket",
 	}
+	t.Outputs["BucketARN"] = cloudformation.Output{
+		Value:       cloudformation.GetAtt("bucket", "Arn"),
+		Description: "The Arn of the bucket",
+	}
 
+	// Bucket Policy
 	doc := newPolicy("PolicyForCloudfrontPrivateContent")
 	doc.addStatement("haws", statement{
 		Effect: "Allow",
@@ -83,11 +98,22 @@ func (b *Bucket) Build() *cloudformation.Template {
 			cloudformation.GetAtt("bucket", "Arn"),
 		},
 	})
-
 	t.Resources["policy"] = &s3.BucketPolicy{
 		Bucket:         cloudformation.Ref("bucket"),
 		PolicyDocument: doc,
 	}
 
 	return t
+}
+
+func (b *Bucket) Deploy() (stack.Output, error) {
+
+	bucketStackName := fmt.Sprintf("%sBucket", b.prefix)
+
+	st := stack.New(bucketStackName, b.region, b, nil)
+	o, err := st.Run()
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }

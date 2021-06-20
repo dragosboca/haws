@@ -1,7 +1,9 @@
 package certificate
 
 import (
+	"fmt"
 	"haws/pkg/customtags"
+	"haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/certificatemanager"
@@ -11,13 +13,15 @@ type Certificate struct {
 	domain string
 	zoneId string
 	san    []string
+	prefix string
 }
 
-func New(domain string, zoneId string, san []string) *Certificate {
+func New(prefix string, domain string, zoneId string, san []string) *Certificate {
 	return &Certificate{
 		domain: domain,
 		zoneId: zoneId,
 		san:    san,
+		prefix: prefix,
 	}
 }
 
@@ -42,4 +46,15 @@ func (c *Certificate) Build() *cloudformation.Template {
 	}
 
 	return t
+}
+
+func (c *Certificate) Deploy() (stack.Output, error) {
+	certStackName := fmt.Sprintf("%sCertificate", c.prefix)
+
+	st := stack.New(certStackName, "us-east-1", c, nil)
+	o, err := st.Run()
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
 }
