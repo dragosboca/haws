@@ -18,22 +18,22 @@ func main() {
 
 	h := haws.New(*prefix, *region, *record, *zoneId, *path)
 
-	if err := h.DeployCertificate(); err != nil {
+	if err := h.AddStack("certificate", haws.NewCertificate(&h)); err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
 
-	if err := h.DeployBucket(); err != nil {
+	if err := h.AddStack("bucket", haws.NewBucket(&h)); err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
 
-	if err := h.DeployCloudFront(); err != nil {
+	if err := h.AddStack("cloudfront", haws.NewCdn(&h)); err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
 
-	if err := h.CreateIamUser(); err != nil {
+	if err := h.AddStack("user", haws.NewIamUser(&h)); err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}

@@ -4,33 +4,20 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"haws/pkg/cloudformation/bucket"
-	"haws/pkg/cloudformation/cdn"
-	"haws/pkg/cloudformation/certificate"
-	"haws/pkg/cloudformation/user"
 	"haws/pkg/stack"
 	"os"
 	"strings"
 )
 
 type Haws struct {
-	prefix string
+	Prefix string
+	Region string
+	ZoneId string
+	Domain string
+	Record string
+	Path   string
 
-	certificate stack.Output
-	bucket      stack.Output
-	cloudfront  stack.Output
-	user        stack.Output
-	region      string
-
-	bucketName string
-	zoneId     string
-	domain     string
-	record     string
-	path       string
-}
-
-type Deployable interface {
-	Deploy() (stack.Output, error)
+	Stacks map[string]*stack.Stack
 }
 
 func getZoneDomain(zoneId string) (string, error) {
@@ -62,63 +49,18 @@ func New(prefix string, region string, record string, zoneId string, path string
 	}
 
 	return Haws{
-		prefix: prefix,
+		Prefix: prefix,
+		ZoneId: zoneId,
+		Domain: domain,
+		Region: region,
+		Record: record,
+		Path:   path,
 
-		//iamUserName:         fmt.Sprintf("Haws%s%s", prefix, strings.Replace(domain, ".", "", -1)),
-
-		zoneId: zoneId,
-		domain: domain,
-		region: region,
-		record: record,
-		path:   path,
+		Stacks: make(map[string]*stack.Stack),
 	}
 }
 
-func (h *Haws) DeployCertificate() error {
-	c := certificate.New(h.prefix, h.domain, h.zoneId, []string{fmt.Sprintf("*.%s", h.domain)})
-	o, err := c.Deploy()
-	if err != nil {
-		return err
-	}
-	h.certificate = o
-	return nil
-}
-
-func (h *Haws) DeployBucket() error {
-	bucketName := fmt.Sprintf("Haws-%s-%s-bucket", h.prefix, strings.Replace(h.domain, ".", "-", -1))
-
-	b := bucket.New(h.prefix, h.region, h.domain, bucketName)
-	o, err := b.Deploy()
-	if err != nil {
-		return err
-	}
-	h.bucket = o
-	return nil
-}
-
-func (h *Haws) DeployCloudFront() error {
-	rec := fmt.Sprintf("%s.%s", h.record, h.domain)
-	if h.record == "" {
-		rec = h.domain
-	}
-
-	c := cdn.New(h.prefix, h.region, h.bucket["OAI"], h.bucket["BucketDomain"], h.certificate["CertificateArn"], rec, h.zoneId, h.path)
-	o, err := c.Deploy()
-	if err != nil {
-		return err
-	}
-	h.cloudfront = o
-	return nil
-}
-
-func (h *Haws) CreateIamUser() error {
-	iamUserName := fmt.Sprintf("Haws%s%s", h.prefix, strings.Replace(h.domain, ".", "", -1))
-
-	u := user.New(h.prefix, h.region, iamUserName, h.path, h.bucket["BucketArn"], h.cloudfront["CloudfrontArn"])
-	o, err := u.Deploy()
-	if err != nil {
-		return err
-	}
-	h.user = o
-	return nil
+func (h *Haws) AddStack(name string, template stack.Template) error {
+	h.Stacks[name] = stack.NewStack(template)
+	return h.Stacks[name].Run()
 }

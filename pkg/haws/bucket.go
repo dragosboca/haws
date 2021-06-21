@@ -1,27 +1,26 @@
-package bucket
+package haws
 
 import (
 	"fmt"
+	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/s3"
-	"haws/pkg/customtags"
+	"haws/pkg/resources/customtags"
 	"haws/pkg/stack"
+	"strings"
 )
 
 type Bucket struct {
-	name   string
-	prefix string
-	domain string
-	region string
+	*Haws
+	stack.TemplateFactory
 }
 
-func New(prefix string, region string, domain string, name string) *Bucket {
+func NewBucket(h *Haws) *Bucket {
 	return &Bucket{
-		name:   name,
-		prefix: prefix,
-		domain: domain,
-		region: region,
+		h,
+		stack.NewTemplate(
+			stack.WithParameter("BucketName", fmt.Sprintf("Haws-%s-%s-bucket", h.Prefix, strings.Replace(h.Domain, ".", "-", -1)))),
 	}
 }
 
@@ -58,13 +57,18 @@ func (d *document) addStatement(sid string, s statement) {
 func (b *Bucket) Build() *cloudformation.Template {
 	t := cloudformation.NewTemplate()
 
+	t.Parameters["BucketName"] = cloudformation.Parameter{
+		Type:        "String",
+		Description: "The name of the bucket with the content",
+	}
+
 	// OAI
 	t.Resources["oai"] = &cloudfront.CloudFrontOriginAccessIdentity{
 		CloudFrontOriginAccessIdentityConfig: &cloudfront.CloudFrontOriginAccessIdentity_CloudFrontOriginAccessIdentityConfig{
-			Comment: fmt.Sprintf("haws oai for %s", b.name),
+			Comment: cloudformation.Sub("haws oai for ${BucketName}"),
 		},
 	}
-	t.Outputs["OAI"] = cloudformation.Output{
+	t.Outputs[b.GetOutputName("Oai")] = cloudformation.Output{
 		Value:       cloudformation.Ref("oai"),
 		Description: "Origin Access Identity for Cloudfront",
 	}
@@ -72,19 +76,22 @@ func (b *Bucket) Build() *cloudformation.Template {
 	// Bucket Itself
 	t.Resources["bucket"] = &s3.Bucket{
 		AccessControl:     "Private",
-		BucketName:        b.name,
+		BucketName:        cloudformation.Ref("BucketName)"),
 		CorsConfiguration: nil,
 		Tags:              customtags.New(),
 	}
-	t.Outputs["BucketDomain"] = cloudformation.Output{
+	t.Outputs[b.GetOutputName("Domain")] = cloudformation.Output{
 		Value:       cloudformation.GetAtt("bucket", "DomainName"),
 		Description: "The domain name of the bucket",
 	}
-	t.Outputs["BucketARN"] = cloudformation.Output{
+	t.Outputs[b.GetOutputName("Arn")] = cloudformation.Output{
 		Value:       cloudformation.GetAtt("bucket", "Arn"),
 		Description: "The Arn of the bucket",
 	}
-
+	t.Outputs[b.GetOutputName("Name")] = cloudformation.Output{
+		Value:       cloudformation.Ref("BucketName"),
+		Description: "The name of the bucket",
+	}
 	// Bucket Policy
 	doc := newPolicy("PolicyForCloudfrontPrivateContent")
 	doc.addStatement("haws", statement{
@@ -106,14 +113,19 @@ func (b *Bucket) Build() *cloudformation.Template {
 	return t
 }
 
-func (b *Bucket) Deploy() (stack.Output, error) {
+func (b *Bucket) GetOutputName(output string) string {
+	return fmt.Sprintf("HawsBucket%s%s", output, strings.Title(b.Prefix))
+}
 
-	bucketStackName := fmt.Sprintf("%sBucket", b.prefix)
+func (b *Bucket) GetStackName() *string {
+	stackName := fmt.Sprintf("%sBucket", b.Prefix)
+	return &stackName
+}
 
-	st := stack.New(bucketStackName, b.region, b, nil)
-	o, err := st.Run()
-	if err != nil {
-		return nil, err
-	}
-	return o, nil
+func (b *Bucket) GetRegion() *string {
+	return &b.Region
+}
+
+func (b *Bucket) GetParameters() []*cfn.Parameter {
+	return b.Params
 }
