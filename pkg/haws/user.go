@@ -4,38 +4,13 @@ import (
 	"fmt"
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"haws/pkg/resources/customtags"
+	"haws/pkg/resources/iampolicy"
 	"haws/pkg/stack"
 	"strings"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/iam"
 )
-
-type iamDocument struct {
-	Version   string
-	Id        string
-	Statement []iamStatement
-}
-
-type iamStatement struct {
-	Sid      string
-	Effect   string
-	Action   []string
-	Resource []string
-}
-
-func newIamPolicy(id string) *iamDocument {
-	return &iamDocument{
-		Version:   "2008-10-17",
-		Id:        id,
-		Statement: make([]iamStatement, 0),
-	}
-}
-
-func (d *iamDocument) addIamStatement(sid string, s iamStatement) {
-	s.Sid = sid
-	d.Statement = append(d.Statement, s)
-}
 
 type User struct {
 	*Haws
@@ -62,8 +37,8 @@ func NewIamUser(h *Haws) *User {
 func (u *User) Build() *cloudformation.Template {
 	t := cloudformation.NewTemplate()
 
-	doc := newIamPolicy("PolicyForCloudfrontPrivateContent")
-	doc.addIamStatement("haws", iamStatement{
+	doc := iampolicy.New("PolicyForCloudfrontPrivateContent")
+	doc.AddStatement("haws", iampolicy.Statement{
 		Effect: "Allow",
 		Action: []string{
 			"s3:PutObject",

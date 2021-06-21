@@ -2,13 +2,15 @@ package haws
 
 import (
 	"fmt"
+	"haws/pkg/resources/bucketpolicy"
+	"haws/pkg/resources/customtags"
+	"haws/pkg/stack"
+	"strings"
+
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/s3"
-	"haws/pkg/resources/customtags"
-	"haws/pkg/stack"
-	"strings"
 )
 
 type Bucket struct {
@@ -22,36 +24,6 @@ func NewBucket(h *Haws) *Bucket {
 		stack.NewTemplate(
 			stack.WithParameter("BucketName", fmt.Sprintf("Haws-%s-%s-bucket", h.Prefix, strings.Replace(h.Domain, ".", "-", -1)))),
 	}
-}
-
-/// Policy Document
-type document struct {
-	Version   string
-	Id        string
-	Statement []statement
-}
-
-type principal map[string]string
-
-type statement struct {
-	Sid       string
-	Effect    string
-	Action    []string
-	Principal principal
-	Resource  []string
-}
-
-func newPolicy(id string) *document {
-	return &document{
-		Version:   "2008-10-17",
-		Id:        id,
-		Statement: []statement{},
-	}
-}
-
-func (d *document) addStatement(sid string, s statement) {
-	s.Sid = sid
-	d.Statement = append(d.Statement, s)
 }
 
 func (b *Bucket) Build() *cloudformation.Template {
@@ -93,10 +65,10 @@ func (b *Bucket) Build() *cloudformation.Template {
 		Description: "The name of the bucket",
 	}
 	// Bucket Policy
-	doc := newPolicy("PolicyForCloudfrontPrivateContent")
-	doc.addStatement("haws", statement{
+	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")
+	doc.AddStatement("haws", bucketpolicy.Statement{
 		Effect: "Allow",
-		Principal: principal{
+		Principal: bucketpolicy.Principal{
 			"AWS": cloudformation.Sub("arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oai}"),
 		},
 		Action: []string{"s3:GetObject"},
