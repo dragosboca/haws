@@ -2,11 +2,12 @@ package haws
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/route53"
-	"haws/pkg/stack"
 	"os"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/dragosboca/haws/pkg/stack"
 )
 
 type Haws struct {

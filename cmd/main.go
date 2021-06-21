@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"haws/pkg/haws"
 	"os"
+
+	"github.com/dragosboca/haws/pkg/haws"
 )
 
 func main() {

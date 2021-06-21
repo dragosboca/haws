@@ -2,12 +2,15 @@ package haws
 
 import (
 	"fmt"
-	"haws/pkg/resources/bucketpolicy"
-	"haws/pkg/resources/customtags"
-	"haws/pkg/stack"
+
 	"strings"
 
+	"github.com/dragosboca/haws/pkg/resources/bucketpolicy"
+	"github.com/dragosboca/haws/pkg/resources/customtags"
+	"github.com/dragosboca/haws/pkg/stack"
+
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
+
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/s3"

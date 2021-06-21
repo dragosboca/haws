@@ -1,4 +1,4 @@
-module haws
+module github.com/dragosboca/haws
 
 go 1.15
 
