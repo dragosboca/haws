@@ -2,12 +2,30 @@ package stack
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/goombaio/namegenerator"
-	"time"
 )
 
 const EmptyChangeSet = "The submitted information didn't contain changes. Submit different information to create a change set."
+
+// FIXME use type assertions on error
+// FIXME FIXME: https://github.com/aws/aws-sdk/issues/44
+func (st *Stack) stackExist() bool {
+	_, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: st.Template.GetStackName(),
+	})
+	//if err != nil {
+	//	if aerr, ok := err.(awserr.Error); ok{
+	//		switch aerr.Code() {
+	//		case cloudformation.AmazonCloudFormationException:
+	//
+	//		}
+	//	}
+	//}
+	return err == nil
+}
 
 func (st *Stack) templateJson() (string, error) {
 	template := st.Template.Build()

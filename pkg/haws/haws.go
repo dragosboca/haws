@@ -18,6 +18,8 @@ type Haws struct {
 	Record string
 	Path   string
 
+	dryRun bool
+
 	Stacks map[string]*stack.Stack
 }
 
@@ -41,7 +43,7 @@ func getZoneDomain(zoneId string) (string, error) {
 	return domain, nil
 }
 
-func New(prefix string, region string, record string, zoneId string, path string) Haws {
+func New(prefix string, region string, record string, zoneId string, path string, dryRun bool) Haws {
 
 	domain, err := getZoneDomain(zoneId)
 	if err != nil {
@@ -57,11 +59,19 @@ func New(prefix string, region string, record string, zoneId string, path string
 		Record: record,
 		Path:   path,
 
+		dryRun: dryRun,
+
 		Stacks: make(map[string]*stack.Stack),
 	}
 }
 
 func (h *Haws) AddStack(name string, template stack.Template) error {
 	h.Stacks[name] = stack.NewStack(template)
-	return h.Stacks[name].Run()
+	if h.dryRun {
+		fmt.Printf("DryRunning %s\n", name)
+		return h.Stacks[name].DryRun()
+	} else {
+		fmt.Printf("Running %s\n", name)
+		return h.Stacks[name].Run()
+	}
 }

@@ -144,3 +144,10 @@ func (c *Cdn) GetRegion() *string {
 func (c *Cdn) GetParameters() []*cfn.Parameter {
 	return c.Params
 }
+
+func (c *Cdn) DryRunOutputs() map[string]string {
+	ret := make(map[string]string)
+	ret[c.GetOutputName("CloudFrontId")] = "EDFDVBD632BHDS5"
+	ret[c.GetOutputName("CloudFrontArn")] = "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5"
+	return ret
+}

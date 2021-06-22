@@ -3,9 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/dragosboca/haws/pkg/haws"
+	"os"
 )
 
 func main() {
@@ -14,10 +13,11 @@ func main() {
 	record := flag.String("record", "", "Record name to be created in the dns zone. If it's ommited the apex of domain will point to cloudfront distribution. Record name should not include domain name")
 	zoneId := flag.String("zone-id", "", "AWS Route53 zone ID for certificate validation and DNS record for cloudfront")
 	path := flag.String("path-prefix", "", "Path prefix that will be appended by cloudfront to all requests")
+	dryRun := flag.Bool("dry-run", false, "Just print the templates")
 
 	flag.Parse()
 
-	h := haws.New(*prefix, *region, *record, *zoneId, *path)
+	h := haws.New(*prefix, *region, *record, *zoneId, *path, *dryRun)
 
 	if err := h.AddStack("certificate", haws.NewCertificate(&h)); err != nil {
 		fmt.Printf("%s\n", err)

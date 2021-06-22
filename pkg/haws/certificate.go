@@ -50,7 +50,7 @@ func (c *Certificate) Build() *cloudformation.Template {
 			HostedZoneId: cloudformation.Ref("ZoneId"),
 		}},
 		SubjectAlternativeNames: []string{
-			cloudformation.Ref("domain"),
+			cloudformation.Ref("Domain"),
 		},
 		ValidationMethod: "DNS",
 
@@ -80,4 +80,10 @@ func (c *Certificate) GetRegion() *string {
 
 func (c *Certificate) GetParameters() []*cfn.Parameter {
 	return c.Params
+}
+
+func (c *Certificate) DryRunOutputs() map[string]string {
+	ret := make(map[string]string)
+	ret[c.GetOutputName("Arn")] = "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678"
+	return ret
 }

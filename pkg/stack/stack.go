@@ -1,6 +1,7 @@
 package stack
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -30,23 +31,6 @@ func NewStack(template Template) *Stack {
 	}
 }
 
-// FIXME use type assertions on error
-// FIXME FIXME: https://github.com/aws/aws-sdk/issues/44
-func (st *Stack) stackExist() bool {
-	_, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: st.Template.GetStackName(),
-	})
-	//if err != nil {
-	//	if aerr, ok := err.(awserr.Error); ok{
-	//		switch aerr.Code() {
-	//		case cloudformation.AmazonCloudFormationException:
-	//
-	//		}
-	//	}
-	//}
-	return err == nil
-}
-
 func (st *Stack) Run() error {
 	templateBody, err := st.templateJson()
 	if err != nil {
@@ -69,4 +53,19 @@ func (st *Stack) Run() error {
 	}
 
 	return st.getOutputs()
+}
+
+func (st *Stack) DryRun() error {
+	templateBody, err := st.templateJson()
+	if err != nil {
+		return err
+	}
+
+	for k, v := range st.DryRunOutputs() {
+		st.Outputs[k] = v
+	}
+
+	fmt.Printf("%s\n", templateBody)
+
+	return nil
 }

@@ -11,6 +11,7 @@ type Template interface {
 	GetRegion() *string
 	GetOutputName(string) string
 	GetParameters() []*cloudformation.Parameter
+	DryRunOutputs() map[string]string
 }
 
 type Parameter func() *cloudformation.Parameter

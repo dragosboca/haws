@@ -43,10 +43,6 @@ func (b *Bucket) Build() *cloudformation.Template {
 			Comment: cloudformation.Sub("haws oai for ${BucketName}"),
 		},
 	}
-	t.Outputs[b.GetOutputName("Oai")] = cloudformation.Output{
-		Value:       cloudformation.Ref("oai"),
-		Description: "Origin Access Identity for Cloudfront",
-	}
 
 	// Bucket Itself
 	t.Resources["bucket"] = &s3.Bucket{
@@ -85,6 +81,23 @@ func (b *Bucket) Build() *cloudformation.Template {
 		PolicyDocument: doc,
 	}
 
+	t.Outputs[b.GetOutputName("Oai")] = cloudformation.Output{
+		Value:       cloudformation.Ref("oai"),
+		Description: "Origin Access Identity for Cloudfront",
+	}
+	t.Outputs[b.GetOutputName("Domain")] = cloudformation.Output{
+		Value:       cloudformation.GetAtt("bucket", "DomainName"),
+		Description: "The domain name of the bucket",
+	}
+	t.Outputs[b.GetOutputName("Arn")] = cloudformation.Output{
+		Value:       cloudformation.GetAtt("bucket", "Arn"),
+		Description: "The Arn of the bucket",
+	}
+	t.Outputs[b.GetOutputName("Name")] = cloudformation.Output{
+		Value:       cloudformation.Ref("BucketName"),
+		Description: "The name of the bucket",
+	}
+
 	return t
 }
 
@@ -103,4 +116,15 @@ func (b *Bucket) GetRegion() *string {
 
 func (b *Bucket) GetParameters() []*cfn.Parameter {
 	return b.Params
+}
+
+func (b *Bucket) DryRunOutputs() map[string]string {
+	ret := make(map[string]string, 0)
+
+	ret[b.GetOutputName("Oai")] = "MockOai"
+	ret[b.GetOutputName("Domain")] = "mockdomain.com"
+	ret[b.GetOutputName("Arn")] = "aws:arn:s3:::mockBucket"
+	ret[b.GetOutputName("Name")] = "mockBucket"
+
+	return ret
 }

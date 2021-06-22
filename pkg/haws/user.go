@@ -116,3 +116,10 @@ func (u *User) GetRegion() *string {
 func (u *User) GetParameters() []*cfn.Parameter {
 	return u.Params
 }
+
+func (u *User) DryRunOutputs() map[string]string {
+	ret := make(map[string]string)
+	ret[u.GetOutputName("AccessKey")] = "ACCESS_KEY"
+	ret[u.GetOutputName("SecretKey")] = "SECRET_ACCESS_KEY"
+	return ret
+}
