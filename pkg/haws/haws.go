@@ -65,7 +65,7 @@ func New(prefix string, region string, record string, zoneId string, path string
 	}
 }
 
-func (h *Haws) AddStack(name string, template stack.Template) error {
+func (h *Haws) DeployStack(name string, template stack.Template) error {
 	h.Stacks[name] = stack.NewStack(template)
 	if h.dryRun {
 		fmt.Printf("DryRunning %s\n", name)

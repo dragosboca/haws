@@ -5,6 +5,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+
+	"github.com/tidwall/pretty"
 )
 
 type Output map[string]string
@@ -65,7 +67,7 @@ func (st *Stack) DryRun() error {
 		st.Outputs[k] = v
 	}
 
-	fmt.Printf("%s\n", templateBody)
+	fmt.Printf("%s\n", pretty.Color([]byte(templateBody), nil))
 
 	return nil
 }
