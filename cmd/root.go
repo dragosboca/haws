@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dragosboca/haws/pkg/haws"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -25,8 +24,6 @@ var (
 		Short: "Hugo on AWS",
 		Long:  "A cloudformation and template generator for running Hugo on AWS",
 	}
-
-	h haws.Haws
 )
 
 func Execute() {
@@ -34,7 +31,6 @@ func Execute() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
 }
 
 func init() {
