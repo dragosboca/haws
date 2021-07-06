@@ -65,7 +65,7 @@ func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
 	return csName, csType, nil
 }
 
-func (st *Stack) waitForChangeSet(csName string, err error) error {
+func (st *Stack) waitForChangeSet(csName string, err error) (bool, error) {
 	fmt.Printf("Waiting for the changeset %s creation to complete\n", csName)
 	err = st.CloudFormation.WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
 		ChangeSetName: &csName,
@@ -77,7 +77,7 @@ func (st *Stack) waitForChangeSet(csName string, err error) error {
 			StackName:     st.GetStackName(),
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 		if *desc.Status == cloudformation.ChangeSetStatusFailed && *desc.StatusReason == EmptyChangeSet {
 			fmt.Printf("Deleting empty changeset %s\n", csName)
@@ -86,13 +86,14 @@ func (st *Stack) waitForChangeSet(csName string, err error) error {
 				StackName:     st.GetStackName(),
 			})
 			if err != nil {
-				return err
+				return false, err
 			}
+			return true, nil
 		} else {
-			return err
+			return false, err
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func (st *Stack) executeChangeSet(csName string, csType string) error {
@@ -117,21 +118,4 @@ func (st *Stack) executeChangeSet(csName string, csType string) error {
 		})
 	}
 	return err
-}
-
-func (st *Stack) getOutputs() error {
-	stack, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{StackName: st.GetStackName()})
-	if err != nil {
-		return err
-	}
-
-	if len(stack.Stacks) > 1 {
-		return fmt.Errorf("multiple results for the same stack name %s", *st.GetStackName())
-	}
-
-	for _, a := range stack.Stacks[0].Outputs {
-		st.Outputs[*a.OutputKey] = *a.OutputValue
-	}
-
-	return nil
 }

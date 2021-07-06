@@ -34,13 +34,15 @@ func NewCdn(h *Haws) *Cdn {
 		h,
 		stack.NewTemplate(
 			stack.WithParameter("RecordName", recordName),
-			stack.WithParameter("CertificateArn", h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetOutputName("Arn")]),
+			stack.WithParameter("CertificateArn", h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")]),
 			stack.WithParameter("ZoneId", h.ZoneId),
 			stack.WithParameter("Path", p),
 		),
 		recordName,
 	}
 }
+
+//FIXME! Template
 
 func (c *Cdn) Build() *cloudformation.Template {
 	t := cloudformation.NewTemplate()
@@ -89,11 +91,14 @@ func (c *Cdn) Build() *cloudformation.Template {
 			IPV6Enabled:       true,
 			Origins: []cloudfront.Distribution_Origin{
 				{
-					DomainName: cloudformation.Ref(c.Stacks["bucket"].GetOutputName("Domain")),
+					DomainName: cloudformation.ImportValue(c.Stacks["bucket"].GetExportName("Domain")),
 					Id:         "cloudfront-hugo",
 					OriginPath: c.Path,
 					S3OriginConfig: &cloudfront.Distribution_S3OriginConfig{
-						OriginAccessIdentity: cloudformation.Sub(fmt.Sprintf("origin-access-identity/cloudfront/${%s}", c.Stacks["bucket"].GetOutputName("Oai"))),
+						OriginAccessIdentity: cloudformation.Join("/", []string{
+							"origin-access-identity/cloudfront",
+							cloudformation.ImportValue(c.Stacks["bucket"].GetExportName("Oai")),
+						}),
 					},
 				},
 			},
@@ -116,24 +121,32 @@ func (c *Cdn) Build() *cloudformation.Template {
 		Type:         "A",
 	}
 
-	t.Outputs[c.GetOutputName("CloudFrontId")] = cloudformation.Output{
+	t.Outputs["CloudFrontId"] = cloudformation.Output{
 		Value:       cloudformation.Ref("distribution"),
 		Description: "ID cloudfront distribution",
+		Export: &cloudformation.Export{
+			Name: c.GetExportName("CloudFrontId"),
+		},
 	}
-	t.Outputs[c.GetOutputName("CloudFrontArn")] = cloudformation.Output{
+
+	t.Outputs["CloudFrontArn"] = cloudformation.Output{
 		Value:       cloudformation.GetAtt("distribution", "Arn"),
 		Description: "ARN of the cloudfront distribution",
+		Export: &cloudformation.Export{
+			Name: c.GetExportName("CloudFrontArn"),
+		},
 	}
 
 	return t
 }
 
-func (c *Cdn) GetOutputName(output string) string {
+func (c *Cdn) GetExportName(output string) string {
 	return fmt.Sprintf("HawsCloudfront%s%s%s", output, strings.Title(c.Prefix), strings.Title(c.Path))
 }
 
 func (c *Cdn) GetStackName() *string {
-	stackName := fmt.Sprintf("%s%sCloudfront", c.Prefix, c.recordName)
+
+	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.Replace(c.recordName, ".", "-", -1))
 	return &stackName
 }
 
@@ -147,7 +160,7 @@ func (c *Cdn) GetParameters() []*cfn.Parameter {
 
 func (c *Cdn) DryRunOutputs() map[string]string {
 	ret := make(map[string]string)
-	ret[c.GetOutputName("CloudFrontId")] = "EDFDVBD632BHDS5"
-	ret[c.GetOutputName("CloudFrontArn")] = "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5"
+	ret[c.GetExportName("CloudFrontId")] = "EDFDVBD632BHDS5"
+	ret[c.GetExportName("CloudFrontArn")] = "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5"
 	return ret
 }

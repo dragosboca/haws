@@ -9,7 +9,7 @@ type Template interface {
 	Build() *cfn.Template
 	GetStackName() *string
 	GetRegion() *string
-	GetOutputName(string) string
+	GetExportName(string) string
 	GetParameters() []*cloudformation.Parameter
 	DryRunOutputs() map[string]string
 }

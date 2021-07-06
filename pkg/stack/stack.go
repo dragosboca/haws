@@ -44,17 +44,19 @@ func (st *Stack) Run() error {
 		return err
 	}
 
-	err = st.waitForChangeSet(csName, err)
+	ok, err := st.waitForChangeSet(csName, err)
 	if err != nil {
 		return err
 	}
+	if ok {
+		return nil
+	}
 
-	err = st.executeChangeSet(csName, csType)
-	if err != nil {
+	if err := st.executeChangeSet(csName, csType); err != nil {
 		return err
 	}
 
-	return st.getOutputs()
+	return st.GetOutputs()
 }
 
 func (st *Stack) DryRun() error {
@@ -68,6 +70,23 @@ func (st *Stack) DryRun() error {
 	}
 
 	fmt.Printf("%s\n", pretty.Color([]byte(templateBody), nil))
+
+	return nil
+}
+
+func (st *Stack) GetOutputs() error {
+	stack, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{StackName: st.GetStackName()})
+	if err != nil {
+		return err
+	}
+
+	if len(stack.Stacks) > 1 {
+		return fmt.Errorf("multiple results for the same stack name %s", *st.GetStackName())
+	}
+
+	for _, a := range stack.Stacks[0].Outputs {
+		st.Outputs[*a.OutputKey] = *a.OutputValue
+	}
 
 	return nil
 }

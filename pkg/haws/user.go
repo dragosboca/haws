@@ -51,15 +51,15 @@ func (u *User) Build() *cloudformation.Template {
 		},
 		Resource: []string{
 			cloudformation.Join("/", []string{
-				cloudformation.Ref(u.Stacks["bucket"].GetOutputName("Name")),
+				cloudformation.ImportValue(u.Stacks["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 				"*",
 			}),
 			cloudformation.Join("/", []string{
-				cloudformation.Ref(u.Stacks["bucket"].GetOutputName("Name")),
+				cloudformation.ImportValue(u.Stacks["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 			}),
-			cloudformation.Ref(u.Stacks["cloudfront"].GetOutputName("Arn")),
+			cloudformation.ImportValue(u.Stacks["cloudfront"].GetExportName("Arn")),
 		},
 	})
 
@@ -100,12 +100,12 @@ func (u *User) Build() *cloudformation.Template {
 	return t
 }
 
-func (u *User) GetOutputName(output string) string {
+func (u *User) GetExportName(output string) string {
 	return fmt.Sprintf("HawsIamUser%s%s%s", output, strings.Title(u.Prefix), strings.Title(u.Path))
 }
 
 func (u *User) GetStackName() *string {
-	stackName := fmt.Sprintf("%s%sIamUser", u.Prefix, u.recordName)
+	stackName := fmt.Sprintf("%s-%s-iam-user", u.Prefix, u.recordName)
 	return &stackName
 }
 
@@ -119,7 +119,7 @@ func (u *User) GetParameters() []*cfn.Parameter {
 
 func (u *User) DryRunOutputs() map[string]string {
 	ret := make(map[string]string)
-	ret[u.GetOutputName("AccessKey")] = "ACCESS_KEY"
-	ret[u.GetOutputName("SecretKey")] = "SECRET_ACCESS_KEY"
+	ret[u.GetExportName("AccessKey")] = "ACCESS_KEY"
+	ret[u.GetExportName("SecretKey")] = "SECRET_ACCESS_KEY"
 	return ret
 }

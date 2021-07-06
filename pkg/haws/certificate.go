@@ -57,25 +57,28 @@ func (c *Certificate) Build() *cloudformation.Template {
 		Tags: customtags.New(),
 	}
 
-	t.Outputs[c.GetOutputName("Arn")] = cloudformation.Output{
+	t.Outputs["Arn"] = cloudformation.Output{
 		Value:       cloudformation.Ref("HugoSslCertificate"),
 		Description: "ARN of certificate created in us-east-1 for the cloudfront distribution",
+		Export: &cloudformation.Export{
+			Name: c.GetExportName("Arn"),
+		},
 	}
 
 	return t
 }
 
-func (c *Certificate) GetOutputName(output string) string {
+func (c *Certificate) GetExportName(output string) string {
 	return fmt.Sprintf("HawsCertificate%s%s", output, strings.Title(c.Prefix))
 }
 
 func (c *Certificate) GetStackName() *string {
-	stackName := fmt.Sprintf("%sCertificate", c.Prefix)
+	stackName := fmt.Sprintf("%s-certificate", c.Prefix)
 	return &stackName
 }
 
 func (c *Certificate) GetRegion() *string {
-	return &c.Region
+	return &c.region
 }
 
 func (c *Certificate) GetParameters() []*cfn.Parameter {
@@ -84,6 +87,6 @@ func (c *Certificate) GetParameters() []*cfn.Parameter {
 
 func (c *Certificate) DryRunOutputs() map[string]string {
 	ret := make(map[string]string)
-	ret[c.GetOutputName("Arn")] = "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678"
+	ret[c.GetExportName("Arn")] = "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678"
 	return ret
 }

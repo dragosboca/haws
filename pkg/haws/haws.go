@@ -75,3 +75,8 @@ func (h *Haws) DeployStack(name string, template stack.Template) error {
 		return h.Stacks[name].Run()
 	}
 }
+
+func (h *Haws) GetStackOutput(name string, template stack.Template) error {
+	h.Stacks[name] = stack.NewStack(template)
+	return h.Stacks[name].GetOutputs()
+}

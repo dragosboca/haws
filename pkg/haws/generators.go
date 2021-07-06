@@ -53,15 +53,15 @@ type deployment struct {
 	OriginPath   string
 }
 
-func (h *Haws) GetStackOutput(stack string, output string) string {
-	return h.Stacks[stack].Outputs[h.Stacks[stack].GetOutputName(output)]
+func (h *Haws) getOutputByName(stack string, output string) string {
+	return h.Stacks[stack].Outputs[h.Stacks[stack].GetExportName(output)]
 }
 
 func (h *Haws) GenerateHugoConfig() {
 	deploymentConfig := deployment{
-		BucketName:   h.GetStackOutput("bucket", "Name"),
+		BucketName:   h.getOutputByName("bucket", "Name"),
 		Region:       h.Region,
-		CloudFrontId: h.GetStackOutput("cloudfront", "CloudFrontId"),
+		CloudFrontId: h.getOutputByName("cloudfront", "CloudFrontId"),
 		OriginPath:   fmt.Sprintf("%s/", strings.Trim(h.Path, "/")),
 	}
 	t := template.Must(template.New("deployment").Parse(hugoConfig))
