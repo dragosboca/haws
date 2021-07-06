@@ -16,7 +16,7 @@ var (
 		Long:  "Deploy all stacks",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			h = haws.New(
+			h := haws.New(
 				viper.GetString("prefix"),
 				viper.GetString("region"),
 				viper.GetString("record"),
