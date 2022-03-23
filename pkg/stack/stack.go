@@ -29,7 +29,7 @@ func NewStack(template Template) *Stack {
 	return &Stack{
 		template,
 		cf,
-		make(Output, 0),
+		make(Output),
 	}
 }
 
@@ -44,7 +44,7 @@ func (st *Stack) Run() error {
 		return err
 	}
 
-	ok, err := st.waitForChangeSet(csName, err)
+	ok, err := st.waitForChangeSet(csName)
 	if err != nil {
 		return err
 	}

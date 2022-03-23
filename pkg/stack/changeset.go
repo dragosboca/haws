@@ -14,7 +14,7 @@ const EmptyChangeSet = "The submitted information didn't contain changes. Submit
 // FIXME FIXME: https://github.com/aws/aws-sdk/issues/44
 func (st *Stack) stackExist() bool {
 	_, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: st.Template.GetStackName(),
+		StackName: st.GetStackName(),
 	})
 	//if err != nil {
 	//	if aerr, ok := err.(awserr.Error); ok{
@@ -28,7 +28,7 @@ func (st *Stack) stackExist() bool {
 }
 
 func (st *Stack) templateJson() (string, error) {
-	template := st.Template.Build()
+  	template := st.Build()
 	templateBody, err := template.JSON()
 	if err != nil {
 		fmt.Printf("Create template error: %s\n", err)
@@ -65,9 +65,9 @@ func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
 	return csName, csType, nil
 }
 
-func (st *Stack) waitForChangeSet(csName string, err error) (bool, error) {
+func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 	fmt.Printf("Waiting for the changeset %s creation to complete\n", csName)
-	err = st.CloudFormation.WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
+	err := st.CloudFormation.WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
 		ChangeSetName: &csName,
 		StackName:     st.GetStackName(),
 	})

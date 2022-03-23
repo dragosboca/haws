@@ -28,7 +28,7 @@ var (
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 }
@@ -42,30 +42,30 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&record, "record", "", "Record name to be added to R53 zone")
 	rootCmd.PersistentFlags().StringVar(&zoneId, "zone-id", "", "AWS Id of the zone used for SSL certificate validation and where the record should be added")
-	rootCmd.PersistentFlags().StringVar(&path, "bucket-path", "", "Path prefix that will be appended by cloudfront to all requests (it should correspond to a subfolder in the bucket)")
+	rootCmd.PersistentFlags().StringVar(&path, "bucket-path", "", "Path prefix that will be appended by cloudfront to all requests (it should correspond to a sub-folder in the bucket)")
 
 	if err := viper.BindPFlag("prefix", rootCmd.PersistentFlags().Lookup("prefix")); err != nil {
-		fmt.Printf("%w", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
 	if err := viper.BindPFlag("region", rootCmd.PersistentFlags().Lookup("region")); err != nil {
-		fmt.Printf("%w", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
 	if err := viper.BindPFlag("record", rootCmd.PersistentFlags().Lookup("record")); err != nil {
-		fmt.Printf("%w", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
 	if err := viper.BindPFlag("zone_id", rootCmd.PersistentFlags().Lookup("zone-id")); err != nil {
-		fmt.Printf("%w", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
 	if err := viper.BindPFlag("bucket_path", rootCmd.PersistentFlags().Lookup("bucket-path")); err != nil {
-		fmt.Printf("%w", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 }
@@ -88,7 +88,7 @@ func initConfig() {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
 		} else {
-			fmt.Printf("Fatal error config file: %w \n", err)
+			fmt.Printf("Fatal error config file: %v\n", err)
 			os.Exit(1)
 		}
 	}

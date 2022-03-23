@@ -30,7 +30,7 @@ func NewIamUser(h *Haws) *User {
 		h,
 		stack.NewTemplate(
 			stack.WithParameter("Path", h.Path),
-			stack.WithParameter("Name", fmt.Sprintf("Haws%s%s", h.Prefix, strings.Replace(h.Domain, ".", "", -1))),
+			stack.WithParameter("Name", fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", ""))),
 		),
 		recordName,
 	}

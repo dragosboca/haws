@@ -146,7 +146,7 @@ func (c *Cdn) GetExportName(output string) string {
 
 func (c *Cdn) GetStackName() *string {
 
-	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.Replace(c.recordName, ".", "-", -1))
+	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.ReplaceAll(c.recordName, ".", "-"))
 	return &stackName
 }
 

@@ -36,9 +36,7 @@ func getZoneDomain(zoneId string) (string, error) {
 	domain := *result.HostedZone.Name
 
 	// trim trailing dot if any
-	if strings.HasSuffix(domain, ".") {
-		domain = domain[:len(domain)-1]
-	}
+	strings.TrimSuffix(domain, ".")
 
 	return domain, nil
 }

@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 
 	"github.com/dragosboca/haws/pkg/haws"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -26,22 +26,22 @@ var (
 			)
 
 			if err := h.GetStackOutput("certificate", haws.NewCertificate(&h)); err != nil {
-				fmt.Printf("%s\n", err)
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
 			if err := h.GetStackOutput("bucket", haws.NewBucket(&h)); err != nil {
-				fmt.Printf("%s\n", err)
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
 			if err := h.GetStackOutput("cloudfront", haws.NewCdn(&h)); err != nil {
-				fmt.Printf("%s\n", err)
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
 			if err := h.GetStackOutput("user", haws.NewIamUser(&h)); err != nil {
-				fmt.Printf("%s\n", err)
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 

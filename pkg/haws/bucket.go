@@ -25,7 +25,7 @@ func NewBucket(h *Haws) *Bucket {
 	return &Bucket{
 		h,
 		stack.NewTemplate(
-			stack.WithParameter("BucketName", strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.Replace(h.Domain, ".", "-", -1))))),
+			stack.WithParameter("BucketName", strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))))),
 	}
 }
 
@@ -124,10 +124,10 @@ func (b *Bucket) GetParameters() []*cfn.Parameter {
 }
 
 func (b *Bucket) DryRunOutputs() map[string]string {
-	ret := make(map[string]string, 0)
+	ret := make(map[string]string)
 
 	ret[b.GetExportName("Oai")] = "MockOai"
-	ret[b.GetExportName("Domain")] = "mockdomain.com"
+	ret[b.GetExportName("Domain")] = "mock.domain.com"
 	ret[b.GetExportName("Arn")] = "aws:arn:s3:::mockBucket"
 	ret[b.GetExportName("Name")] = "mockBucket"
 
