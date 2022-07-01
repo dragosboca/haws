@@ -14,7 +14,7 @@ builds:
       - linux
       - darwin
       - windows
-    main: ./cmd
+    main: .
     binary: haws
     goarch:
       - amd64
