@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+
 	"github.com/dragosboca/haws/pkg/stack"
 )
 
@@ -77,4 +78,8 @@ func (h *Haws) DeployStack(name string, template stack.Template) error {
 func (h *Haws) GetStackOutput(name string, template stack.Template) error {
 	h.Stacks[name] = stack.NewStack(template)
 	return h.Stacks[name].GetOutputs()
+}
+
+func (h *Haws) GetRegion() *string {
+	return &h.Region
 }
