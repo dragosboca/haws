@@ -14,18 +14,18 @@ const hugoConfig = `
     cloudFrontDistributionID = "{{ .CloudFrontId }}"
 `
 
-//const hugoGithubFlow = `
-//# This is a basic workflow to help you get started with Actions
-//# Inspired by https://capgemini.github.io/development/Using-GitHub-Actions-and-Hugo-Deploy-to-Deploy-to-AWS/
-//name: Build and Deploy Hugo Site
+// const hugoGithubFlow = `
+// # This is a basic workflow to help you get started with Actions
+// # Inspired by https://capgemini.github.io/development/Using-GitHub-Actions-and-Hugo-Deploy-to-Deploy-to-AWS/
+// name: Build and Deploy Hugo Site
 //
-//# Controls when the action will run. Triggers the workflow on push
-//# events but only for the master branch
-//on:
+// # Controls when the action will run. Triggers the workflow on push
+// # events but only for the master branch
+// on:
 //  push:
 //    branches: [ master ]
-//jobs:
-//Build_and_Deploy:
+// jobs:
+// Build_and_Deploy:
 //    runs-on: ubuntu-18.04
 //    steps:
 //    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -44,7 +44,7 @@ const hugoConfig = `
 //	  env:
 //		AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 //		AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-//`
+// `
 
 type deployment struct {
 	BucketName   string

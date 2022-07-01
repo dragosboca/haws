@@ -7,43 +7,34 @@ import (
 	"github.com/dragosboca/haws/pkg/resources/customtags"
 	"github.com/dragosboca/haws/pkg/stack"
 
-	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
-
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/certificatemanager"
 )
 
 type Certificate struct {
 	*Haws
-	stack.TemplateFactory
+	stack.TemplateComponent
 	region string
 }
 
 func NewCertificate(h *Haws) *Certificate {
-	return &Certificate{
-		h,
-		stack.NewTemplate(
-			stack.WithParameter("Domain", h.Domain),
-			stack.WithParameter("ZoneId", h.ZoneId),
-		),
-		"us-east-1",
+	certificate := &Certificate{
+		Haws:              h,
+		TemplateComponent: stack.NewTemplate(),
+		region:            "us-east-1",
 	}
-}
 
-func (c *Certificate) Build() *cloudformation.Template {
-	t := cloudformation.NewTemplate()
-
-	t.Parameters["Domain"] = cloudformation.Parameter{
+	certificate.AddParameter("Domain", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Domain for which we generate the certificate",
-	}
+	}, h.Domain)
 
-	t.Parameters["ZoneId"] = cloudformation.Parameter{
+	certificate.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The Route53 zone used for domain validation",
-	}
+	}, h.ZoneId)
 
-	t.Resources["HugoSslCertificate"] = &certificatemanager.Certificate{
+	certificate.AddResource("HugoSslCertificate", &certificatemanager.Certificate{
 		DomainName: cloudformation.Ref("Domain"),
 		DomainValidationOptions: []certificatemanager.Certificate_DomainValidationOption{{
 			DomainName:   cloudformation.Ref("Domain"),
@@ -55,17 +46,17 @@ func (c *Certificate) Build() *cloudformation.Template {
 		ValidationMethod: "DNS",
 
 		Tags: customtags.New(),
-	}
+	})
 
-	t.Outputs["Arn"] = cloudformation.Output{
+	certificate.AddOutput("Arn", cloudformation.Output{
 		Value:       cloudformation.Ref("HugoSslCertificate"),
 		Description: "ARN of certificate created in us-east-1 for the cloudfront distribution",
 		Export: &cloudformation.Export{
-			Name: c.GetExportName("Arn"),
+			Name: certificate.GetExportName("Arn"),
 		},
-	}
+	})
 
-	return t
+	return certificate
 }
 
 func (c *Certificate) GetExportName(output string) string {
@@ -75,14 +66,6 @@ func (c *Certificate) GetExportName(output string) string {
 func (c *Certificate) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-certificate", c.Prefix)
 	return &stackName
-}
-
-func (c *Certificate) GetRegion() *string {
-	return &c.region
-}
-
-func (c *Certificate) GetParameters() []*cfn.Parameter {
-	return c.Params
 }
 
 func (c *Certificate) DryRunOutputs() map[string]string {

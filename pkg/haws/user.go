@@ -8,15 +8,13 @@ import (
 	"github.com/dragosboca/haws/pkg/resources/iampolicy"
 	"github.com/dragosboca/haws/pkg/stack"
 
-	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
-
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/iam"
 )
 
 type User struct {
 	*Haws
-	stack.TemplateFactory
+	stack.TemplateComponent
 	recordName string
 }
 
@@ -26,18 +24,11 @@ func NewIamUser(h *Haws) *User {
 		recordName = h.Domain
 	}
 
-	return &User{
-		h,
-		stack.NewTemplate(
-			stack.WithParameter("Path", h.Path),
-			stack.WithParameter("Name", fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", ""))),
-		),
-		recordName,
+	user := &User{
+		Haws:              h,
+		TemplateComponent: stack.NewTemplate(),
+		recordName:        recordName,
 	}
-}
-
-func (u *User) Build() *cloudformation.Template {
-	t := cloudformation.NewTemplate()
 
 	doc := iampolicy.New("PolicyForCloudfrontPrivateContent")
 	doc.AddStatement("haws", iampolicy.Statement{
@@ -51,28 +42,29 @@ func (u *User) Build() *cloudformation.Template {
 		},
 		Resource: []string{
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(u.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 				"*",
 			}),
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(u.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 			}),
-			cloudformation.ImportValue(u.Stacks["cloudfront"].GetExportName("Arn")),
+			cloudformation.ImportValue(h.Stacks["cloudfront"].GetExportName("Arn")),
 		},
 	})
 
-	t.Parameters["Path"] = cloudformation.Parameter{
+	user.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The path in the bucket for the origin of the site",
-	}
-	t.Parameters["Name"] = cloudformation.Parameter{
+	}, h.Path)
+
+	user.AddParameter("Name", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The name of the policy",
-	}
+	}, fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", "")))
 
-	t.Resources["user"] = &iam.User{
+	user.AddResource("user", &iam.User{
 		Policies: []iam.User_Policy{
 			{
 				PolicyDocument: doc,
@@ -81,23 +73,24 @@ func (u *User) Build() *cloudformation.Template {
 		},
 		Tags:     customtags.New(),
 		UserName: cloudformation.Ref("Name"),
-	}
+	})
 
-	t.Resources["accesskey"] = &iam.AccessKey{
+	user.AddResource("accesskey", &iam.AccessKey{
 		Serial:   0,
 		UserName: cloudformation.Ref("user"),
-	}
+	})
 
-	t.Outputs["AccessKey"] = cloudformation.Output{
+	user.AddOutput("AccessKey", cloudformation.Output{
 		Value:       cloudformation.Ref("accesskey"),
 		Description: "AccessKey",
-	}
-	t.Outputs["SecretKey"] = cloudformation.Output{
+	})
+
+	user.AddOutput("SecretKey", cloudformation.Output{
 		Value:       cloudformation.GetAtt("accesskey", "SecretAccessKey"),
 		Description: "SecretAccessKey for user",
-	}
+	})
 
-	return t
+	return user
 }
 
 func (u *User) GetExportName(output string) string {
@@ -107,14 +100,6 @@ func (u *User) GetExportName(output string) string {
 func (u *User) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-%s-iam-user", u.Prefix, u.recordName)
 	return &stackName
-}
-
-func (u *User) GetRegion() *string {
-	return &u.Region
-}
-
-func (u *User) GetParameters() []*cfn.Parameter {
-	return u.Params
 }
 
 func (u *User) DryRunOutputs() map[string]string {

@@ -6,8 +6,6 @@ import (
 
 	"github.com/dragosboca/haws/pkg/stack"
 
-	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
-
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/route53"
@@ -15,14 +13,14 @@ import (
 
 type Cdn struct {
 	*Haws
-	stack.TemplateFactory
+	stack.TemplateComponent
 	recordName string
 }
 
 func NewCdn(h *Haws) *Cdn {
 
 	// format path for cloudformation
-	p := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
+	path := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
 
 	// format rec
 	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
@@ -30,44 +28,33 @@ func NewCdn(h *Haws) *Cdn {
 		recordName = h.Domain
 	}
 
-	return &Cdn{
-		h,
-		stack.NewTemplate(
-			stack.WithParameter("RecordName", recordName),
-			stack.WithParameter("CertificateArn", h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")]),
-			stack.WithParameter("ZoneId", h.ZoneId),
-			stack.WithParameter("Path", p),
-		),
-		recordName,
+	cdn := &Cdn{
+		Haws:              h,
+		TemplateComponent: stack.NewTemplate(),
+		recordName:        recordName,
 	}
-}
 
-//FIXME! Template
-
-func (c *Cdn) Build() *cloudformation.Template {
-	t := cloudformation.NewTemplate()
-
-	t.Parameters["RecordName"] = cloudformation.Parameter{
+	cdn.AddParameter("RecordName", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Record name for Route53 domain",
-	}
+	}, recordName)
 
-	t.Parameters["CertificateArn"] = cloudformation.Parameter{
+	cdn.AddParameter("CertificateArn", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The ARN of the certificate generated in us-east-1 for cloudfront distribution",
-	}
+	}, h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")])
 
-	t.Parameters["ZoneId"] = cloudformation.Parameter{
+	cdn.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Route53 Zone Id",
-	}
+	}, h.ZoneId)
 
-	t.Parameters["Path"] = cloudformation.Parameter{
+	cdn.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The path in the bucket for the origin of the site",
-	}
+	}, path)
 
-	t.Resources["distribution"] = &cloudfront.Distribution{
+	cdn.AddResource("distribution", &cloudfront.Distribution{
 		DistributionConfig: &cloudfront.Distribution_DistributionConfig{
 			Aliases: []string{
 				cloudformation.Ref("RecordName"),
@@ -91,13 +78,13 @@ func (c *Cdn) Build() *cloudformation.Template {
 			IPV6Enabled:       true,
 			Origins: []cloudfront.Distribution_Origin{
 				{
-					DomainName: cloudformation.ImportValue(c.Stacks["bucket"].GetExportName("Domain")),
+					DomainName: cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Domain")),
 					Id:         "cloudfront-hugo",
-					OriginPath: c.Path,
+					OriginPath: h.Path,
 					S3OriginConfig: &cloudfront.Distribution_S3OriginConfig{
 						OriginAccessIdentity: cloudformation.Join("/", []string{
 							"origin-access-identity/cloudfront",
-							cloudformation.ImportValue(c.Stacks["bucket"].GetExportName("Oai")),
+							cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Oai")),
 						}),
 					},
 				},
@@ -108,9 +95,9 @@ func (c *Cdn) Build() *cloudformation.Template {
 				SslSupportMethod:       "sni-only",
 			},
 		},
-	}
+	})
 
-	t.Resources["recordset"] = &route53.RecordSet{
+	cdn.AddResource("recordset", &route53.RecordSet{
 		AliasTarget: &route53.RecordSet_AliasTarget{
 			DNSName:      cloudformation.GetAtt("distribution", "DomainName"),
 			HostedZoneId: "Z2FDTNDATAQYW2",
@@ -119,25 +106,25 @@ func (c *Cdn) Build() *cloudformation.Template {
 		HostedZoneId: cloudformation.Ref("ZoneId"),
 		Name:         cloudformation.Ref("RecordName"),
 		Type:         "A",
-	}
+	})
 
-	t.Outputs["CloudFrontId"] = cloudformation.Output{
+	cdn.AddOutput("CloudFrontId", cloudformation.Output{
 		Value:       cloudformation.Ref("distribution"),
 		Description: "ID cloudfront distribution",
 		Export: &cloudformation.Export{
-			Name: c.GetExportName("CloudFrontId"),
+			Name: cdn.GetExportName("CloudFrontId"),
 		},
-	}
+	})
 
-	t.Outputs["CloudFrontArn"] = cloudformation.Output{
+	cdn.AddOutput("CloudFrontArn", cloudformation.Output{
 		Value:       cloudformation.GetAtt("distribution", "Arn"),
 		Description: "ARN of the cloudfront distribution",
 		Export: &cloudformation.Export{
-			Name: c.GetExportName("CloudFrontArn"),
+			Name: cdn.GetExportName("CloudFrontArn"),
 		},
-	}
+	})
 
-	return t
+	return cdn
 }
 
 func (c *Cdn) GetExportName(output string) string {
@@ -148,14 +135,6 @@ func (c *Cdn) GetStackName() *string {
 
 	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.ReplaceAll(c.recordName, ".", "-"))
 	return &stackName
-}
-
-func (c *Cdn) GetRegion() *string {
-	return &c.Region
-}
-
-func (c *Cdn) GetParameters() []*cfn.Parameter {
-	return c.Params
 }
 
 func (c *Cdn) DryRunOutputs() map[string]string {

@@ -2,14 +2,11 @@ package haws
 
 import (
 	"fmt"
-
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/bucketpolicy"
 	"github.com/dragosboca/haws/pkg/resources/customtags"
 	"github.com/dragosboca/haws/pkg/stack"
-
-	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
@@ -18,41 +15,15 @@ import (
 
 type Bucket struct {
 	*Haws
-	stack.TemplateFactory
+	stack.TemplateComponent
 }
 
 func NewBucket(h *Haws) *Bucket {
-	return &Bucket{
-		h,
-		stack.NewTemplate(
-			stack.WithParameter("BucketName", strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))))),
-	}
-}
-
-func (b *Bucket) Build() *cloudformation.Template {
-	t := cloudformation.NewTemplate()
-
-	t.Parameters["BucketName"] = cloudformation.Parameter{
-		Type:        "String",
-		Description: "The name of the bucket with the content",
+	bucket := &Bucket{
+		Haws:              h,
+		TemplateComponent: stack.NewTemplate(),
 	}
 
-	// OAI
-	t.Resources["oai"] = &cloudfront.CloudFrontOriginAccessIdentity{
-		CloudFrontOriginAccessIdentityConfig: &cloudfront.CloudFrontOriginAccessIdentity_CloudFrontOriginAccessIdentityConfig{
-			Comment: cloudformation.Sub("haws oai for ${BucketName}"),
-		},
-	}
-
-	// Bucket Itself
-	t.Resources["bucket"] = &s3.Bucket{
-		AccessControl:     "Private",
-		BucketName:        cloudformation.Ref("BucketName"),
-		CorsConfiguration: nil,
-		Tags:              customtags.New(),
-	}
-
-	// Bucket Policy
 	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")
 	doc.AddStatement("haws", bucketpolicy.Statement{
 		Effect: "Allow",
@@ -65,45 +36,65 @@ func (b *Bucket) Build() *cloudformation.Template {
 			cloudformation.GetAtt("bucket", "Arn"),
 		},
 	})
-	t.Resources["policy"] = &s3.BucketPolicy{
+
+	bucket.AddParameter("BucketName",
+		cloudformation.Parameter{
+			Type:        "String",
+			Description: "The name of the bucket with the content",
+		},
+		strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))),
+	)
+
+	bucket.AddResource("oai", &cloudfront.CloudFrontOriginAccessIdentity{
+		CloudFrontOriginAccessIdentityConfig: &cloudfront.CloudFrontOriginAccessIdentity_CloudFrontOriginAccessIdentityConfig{
+			Comment: cloudformation.Sub("haws oai for ${BucketName}"),
+		}})
+
+	bucket.AddResource("bucket", &s3.Bucket{
+		AccessControl:     "Private",
+		BucketName:        cloudformation.Ref("BucketName"),
+		CorsConfiguration: nil,
+		Tags:              customtags.New(),
+	})
+
+	bucket.AddResource("policy", &s3.BucketPolicy{
 		Bucket:         cloudformation.Ref("bucket"),
 		PolicyDocument: doc,
-	}
+	})
 
-	// Outputs
-	t.Outputs["Domain"] = cloudformation.Output{
+	bucket.AddOutput("Domain", cloudformation.Output{
 		Value:       cloudformation.GetAtt("bucket", "DomainName"),
 		Description: "The domain name of the bucket",
 		Export: &cloudformation.Export{
-			Name: b.GetExportName("Domain"),
+			Name: bucket.GetExportName("Domain"),
 		},
-	}
+	})
 
-	t.Outputs["Arn"] = cloudformation.Output{
+	bucket.AddOutput("Arn", cloudformation.Output{
 		Value:       cloudformation.GetAtt("bucket", "Arn"),
 		Description: "The Arn of the bucket",
 		Export: &cloudformation.Export{
-			Name: b.GetExportName("Arn"),
+			Name: bucket.GetExportName("Arn"),
 		},
-	}
+	})
 
-	t.Outputs["Name"] = cloudformation.Output{
+	bucket.AddOutput("Name", cloudformation.Output{
 		Value:       cloudformation.Ref("BucketName"),
 		Description: "The name of the bucket",
 		Export: &cloudformation.Export{
-			Name: b.GetExportName("Name"),
+			Name: bucket.GetExportName("Name"),
 		},
-	}
+	})
 
-	t.Outputs["OAI"] = cloudformation.Output{
+	bucket.AddOutput("OAI", cloudformation.Output{
 		Value:       cloudformation.Ref("oai"),
 		Description: "Origin Access Identity for Cloudfront",
 		Export: &cloudformation.Export{
-			Name: b.GetExportName("Oai"),
+			Name: bucket.GetExportName("Oai"),
 		},
-	}
+	})
 
-	return t
+	return bucket
 }
 
 func (b *Bucket) GetExportName(output string) string {
@@ -113,14 +104,6 @@ func (b *Bucket) GetExportName(output string) string {
 func (b *Bucket) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-bucket", b.Prefix)
 	return &stackName
-}
-
-func (b *Bucket) GetRegion() *string {
-	return &b.Region
-}
-
-func (b *Bucket) GetParameters() []*cfn.Parameter {
-	return b.Params
 }
 
 func (b *Bucket) DryRunOutputs() map[string]string {
