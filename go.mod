@@ -3,7 +3,7 @@ module github.com/dragosboca/haws
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.55
+	github.com/aws/aws-sdk-go v1.44.91
 	github.com/awslabs/goformation/v4 v4.19.5
 	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/spf13/cobra v1.5.0
