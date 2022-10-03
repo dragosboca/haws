@@ -8,7 +8,7 @@ require (
 	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/tidwall/pretty v1.2.0
+	github.com/tidwall/pretty v1.2.1
 )
 
 require (
