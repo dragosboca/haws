@@ -3,7 +3,7 @@ module github.com/dragosboca/haws
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.55
+	github.com/aws/aws-sdk-go v1.44.133
 	github.com/awslabs/goformation/v4 v4.19.5
 	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e
 	github.com/spf13/cobra v1.5.0
@@ -28,8 +28,8 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
