@@ -83,12 +83,12 @@ func NewIamUser(h *Haws) *User {
 	user.AddOutput("AccessKey", cloudformation.Output{
 		Value:       cloudformation.Ref("accesskey"),
 		Description: "AccessKey",
-	})
+	}, "ACCESS_KEY")
 
 	user.AddOutput("SecretKey", cloudformation.Output{
 		Value:       cloudformation.GetAtt("accesskey", "SecretAccessKey"),
 		Description: "SecretAccessKey for user",
-	})
+	}, "SECRET_ACCESS_KEY")
 
 	return user
 }
@@ -100,11 +100,4 @@ func (u *User) GetExportName(output string) string {
 func (u *User) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-%s-iam-user", u.Prefix, u.recordName)
 	return &stackName
-}
-
-func (u *User) DryRunOutputs() map[string]string {
-	ret := make(map[string]string)
-	ret[u.GetExportName("AccessKey")] = "ACCESS_KEY"
-	ret[u.GetExportName("SecretKey")] = "SECRET_ACCESS_KEY"
-	return ret
 }

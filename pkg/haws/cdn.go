@@ -9,6 +9,7 @@ import (
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
 	"github.com/awslabs/goformation/v4/cloudformation/route53"
+	"github.com/awslabs/goformation/v4/cloudformation/s3"
 )
 
 type Cdn struct {
@@ -54,6 +55,11 @@ func NewCdn(h *Haws) *Cdn {
 		Description: "The path in the bucket for the origin of the site",
 	}, path)
 
+	cdn.AddResource("log_bucket", &s3.Bucket{
+		BucketName:    fmt.Sprintf("%s-haws-logs-%s", cdn.Prefix, strings.ReplaceAll(cdn.Domain, ".", "-")),
+		AccessControl: "private",
+	})
+
 	cdn.AddResource("distribution", &cloudfront.Distribution{
 		DistributionConfig: &cloudfront.Distribution_DistributionConfig{
 			Aliases: []string{
@@ -76,6 +82,11 @@ func NewCdn(h *Haws) *Cdn {
 			Enabled:           true,
 			HttpVersion:       "http2",
 			IPV6Enabled:       true,
+			Logging: &cloudfront.Distribution_Logging{
+				Bucket:         cloudformation.Ref("log_bucket"),
+				Prefix:         cdn.Prefix,
+				IncludeCookies: true,
+			},
 			Origins: []cloudfront.Distribution_Origin{
 				{
 					DomainName: cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Domain")),
@@ -114,7 +125,7 @@ func NewCdn(h *Haws) *Cdn {
 		Export: &cloudformation.Export{
 			Name: cdn.GetExportName("CloudFrontId"),
 		},
-	})
+	}, "EDFDVBD632BHDS5")
 
 	cdn.AddOutput("CloudFrontArn", cloudformation.Output{
 		Value:       cloudformation.GetAtt("distribution", "Arn"),
@@ -122,7 +133,7 @@ func NewCdn(h *Haws) *Cdn {
 		Export: &cloudformation.Export{
 			Name: cdn.GetExportName("CloudFrontArn"),
 		},
-	})
+	}, "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5")
 
 	return cdn
 }
@@ -132,14 +143,6 @@ func (c *Cdn) GetExportName(output string) string {
 }
 
 func (c *Cdn) GetStackName() *string {
-
 	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.ReplaceAll(c.recordName, ".", "-"))
 	return &stackName
-}
-
-func (c *Cdn) DryRunOutputs() map[string]string {
-	ret := make(map[string]string)
-	ret[c.GetExportName("CloudFrontId")] = "EDFDVBD632BHDS5"
-	ret[c.GetExportName("CloudFrontArn")] = "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5"
-	return ret
 }

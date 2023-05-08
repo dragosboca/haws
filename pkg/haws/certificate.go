@@ -54,7 +54,7 @@ func NewCertificate(h *Haws) *Certificate {
 		Export: &cloudformation.Export{
 			Name: certificate.GetExportName("Arn"),
 		},
-	})
+	}, "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678")
 
 	return certificate
 }
@@ -66,10 +66,4 @@ func (c *Certificate) GetExportName(output string) string {
 func (c *Certificate) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-certificate", c.Prefix)
 	return &stackName
-}
-
-func (c *Certificate) DryRunOutputs() map[string]string {
-	ret := make(map[string]string)
-	ret[c.GetExportName("Arn")] = "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678"
-	return ret
 }

@@ -68,7 +68,7 @@ func NewBucket(h *Haws) *Bucket {
 		Export: &cloudformation.Export{
 			Name: bucket.GetExportName("Domain"),
 		},
-	})
+	}, "mock.domain.com")
 
 	bucket.AddOutput("Arn", cloudformation.Output{
 		Value:       cloudformation.GetAtt("bucket", "Arn"),
@@ -76,7 +76,7 @@ func NewBucket(h *Haws) *Bucket {
 		Export: &cloudformation.Export{
 			Name: bucket.GetExportName("Arn"),
 		},
-	})
+	}, "aws:arn:s3:::mockBucket")
 
 	bucket.AddOutput("Name", cloudformation.Output{
 		Value:       cloudformation.Ref("BucketName"),
@@ -84,7 +84,7 @@ func NewBucket(h *Haws) *Bucket {
 		Export: &cloudformation.Export{
 			Name: bucket.GetExportName("Name"),
 		},
-	})
+	}, "mockBucket")
 
 	bucket.AddOutput("OAI", cloudformation.Output{
 		Value:       cloudformation.Ref("oai"),
@@ -92,7 +92,7 @@ func NewBucket(h *Haws) *Bucket {
 		Export: &cloudformation.Export{
 			Name: bucket.GetExportName("Oai"),
 		},
-	})
+	}, "MockOai")
 
 	return bucket
 }
@@ -104,15 +104,4 @@ func (b *Bucket) GetExportName(output string) string {
 func (b *Bucket) GetStackName() *string {
 	stackName := fmt.Sprintf("%s-bucket", b.Prefix)
 	return &stackName
-}
-
-func (b *Bucket) DryRunOutputs() map[string]string {
-	ret := make(map[string]string)
-
-	ret[b.GetExportName("Oai")] = "MockOai"
-	ret[b.GetExportName("Domain")] = "mock.domain.com"
-	ret[b.GetExportName("Arn")] = "aws:arn:s3:::mockBucket"
-	ret[b.GetExportName("Name")] = "mockBucket"
-
-	return ret
 }

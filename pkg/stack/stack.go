@@ -2,6 +2,7 @@ package stack
 
 import (
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -65,7 +66,7 @@ func (st *Stack) DryRun() error {
 		return err
 	}
 
-	for k, v := range st.DryRunOutputs() {
+	for k, v := range st.GetDryRunOutputs() {
 		st.Outputs[k] = v
 	}
 
