@@ -18,7 +18,7 @@ type User struct {
 	recordName string
 }
 
-func NewIamUser(h *Haws) *User {
+func (h *Haws) NewIamUser() *User {
 	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
 	if h.Record == "" {
 		recordName = h.Domain

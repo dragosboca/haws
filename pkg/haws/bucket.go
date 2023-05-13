@@ -18,7 +18,7 @@ type Bucket struct {
 	stack.TemplateComponent
 }
 
-func NewBucket(h *Haws) *Bucket {
+func (h *Haws) NewBucket() *Bucket {
 	bucket := &Bucket{
 		Haws:              h,
 		TemplateComponent: stack.NewTemplate(),

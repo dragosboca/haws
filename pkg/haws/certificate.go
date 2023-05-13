@@ -17,7 +17,7 @@ type Certificate struct {
 	region string
 }
 
-func NewCertificate(h *Haws) *Certificate {
+func (h *Haws) NewCertificate() *Certificate {
 	certificate := &Certificate{
 		Haws:              h,
 		TemplateComponent: stack.NewTemplate(),

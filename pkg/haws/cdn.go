@@ -18,7 +18,7 @@ type Cdn struct {
 	recordName string
 }
 
-func NewCdn(h *Haws) *Cdn {
+func (h *Haws) NewCdn() *Cdn {
 
 	// format path for cloudformation
 	path := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
