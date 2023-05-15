@@ -13,20 +13,22 @@ import (
 )
 
 type User struct {
-	*Haws
 	stack.TemplateComponent
 	recordName string
+	Path       string
+	Prefix     string
 }
 
-func NewIamUser(h *Haws) *User {
+func (h *Haws) NewIamUser() *User {
 	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
 	if h.Record == "" {
 		recordName = h.Domain
 	}
 
 	user := &User{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
+		Prefix:            h.Prefix,
+		Path:              h.Path,
+		TemplateComponent: stack.NewTemplate(h.Region),
 		recordName:        recordName,
 	}
 

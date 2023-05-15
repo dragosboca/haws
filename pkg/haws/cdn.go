@@ -13,12 +13,14 @@ import (
 )
 
 type Cdn struct {
-	*Haws
 	stack.TemplateComponent
 	recordName string
+	Prefix     string
+	Domain     string
+	Path       string
 }
 
-func NewCdn(h *Haws) *Cdn {
+func (h *Haws) NewCdn() *Cdn {
 
 	// format path for cloudformation
 	path := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
@@ -30,8 +32,10 @@ func NewCdn(h *Haws) *Cdn {
 	}
 
 	cdn := &Cdn{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
+		Prefix:            h.Prefix,
+		Domain:            h.Domain,
+		Path:              h.Path,
+		TemplateComponent: stack.NewTemplate(h.Region),
 		recordName:        recordName,
 	}
 

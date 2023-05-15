@@ -14,14 +14,14 @@ import (
 )
 
 type Bucket struct {
-	*Haws
 	stack.TemplateComponent
+	Prefix string
 }
 
-func NewBucket(h *Haws) *Bucket {
+func (h *Haws) NewBucket() *Bucket {
 	bucket := &Bucket{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
+		Prefix:            h.Prefix,
+		TemplateComponent: stack.NewTemplate(h.Region),
 	}
 
 	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")

@@ -79,7 +79,3 @@ func (h *Haws) GetStackOutput(name string, template stack.Template) error {
 	h.Stacks[name] = stack.NewStack(template)
 	return h.Stacks[name].GetOutputs()
 }
-
-func (h *Haws) GetRegion() *string {
-	return &h.Region
-}

@@ -25,22 +25,22 @@ var (
 				dryRun,
 			)
 
-			if err := h.GetStackOutput("certificate", haws.NewCertificate(&h)); err != nil {
+			if err := h.GetStackOutput("certificate", h.NewCertificate()); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
-			if err := h.GetStackOutput("bucket", haws.NewBucket(&h)); err != nil {
+			if err := h.GetStackOutput("bucket", h.NewBucket()); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
-			if err := h.GetStackOutput("cloudfront", haws.NewCdn(&h)); err != nil {
+			if err := h.GetStackOutput("cloudfront", h.NewCdn()); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 
-			if err := h.GetStackOutput("user", haws.NewIamUser(&h)); err != nil {
+			if err := h.GetStackOutput("user", h.NewIamUser()); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
