@@ -12,16 +12,14 @@ import (
 )
 
 type Certificate struct {
-	*Haws
 	stack.TemplateComponent
-	region string
+	Prefix string
 }
 
 func (h *Haws) NewCertificate() *Certificate {
 	certificate := &Certificate{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
-		region:            "us-east-1",
+		Prefix:            h.Prefix,
+		TemplateComponent: stack.NewTemplate("us-east-1"),
 	}
 
 	certificate.AddParameter("Domain", cloudformation.Parameter{

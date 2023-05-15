@@ -13,9 +13,10 @@ import (
 )
 
 type User struct {
-	*Haws
 	stack.TemplateComponent
 	recordName string
+	Path       string
+	Prefix     string
 }
 
 func (h *Haws) NewIamUser() *User {
@@ -25,8 +26,9 @@ func (h *Haws) NewIamUser() *User {
 	}
 
 	user := &User{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
+		Prefix:            h.Prefix,
+		Path:              h.Path,
+		TemplateComponent: stack.NewTemplate(h.Region),
 		recordName:        recordName,
 	}
 

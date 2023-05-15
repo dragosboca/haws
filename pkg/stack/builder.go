@@ -8,13 +8,14 @@ import (
 type Template interface {
 	Build() *cfn.Template
 	GetStackName() *string
-	GetRegion() *string
+	GetRegion() string
 	GetExportName(string) string
 	GetParameters() []*cloudformation.Parameter
 	GetDryRunOutputs() map[string]string
 }
 
 type TemplateComponent struct {
+	Region        string
 	Params        []*cloudformation.Parameter
 	Parameters    map[string]cfn.Parameter
 	Resources     map[string]*cfn.Resource
@@ -22,13 +23,14 @@ type TemplateComponent struct {
 	DryRunOutputs map[string]string
 }
 
-func NewTemplate() TemplateComponent {
+func NewTemplate(region string) TemplateComponent {
 	b := TemplateComponent{
 		Params:        make([]*cloudformation.Parameter, 0),
 		Parameters:    make(map[string]cfn.Parameter, 0),
 		Resources:     make(map[string]*cfn.Resource, 0),
 		Outputs:       make(map[string]cfn.Output, 0),
 		DryRunOutputs: make(map[string]string, 0),
+		Region:        region,
 	}
 
 	return b
@@ -73,4 +75,8 @@ func (t *TemplateComponent) Build() *cfn.Template {
 
 func (t *TemplateComponent) GetDryRunOutputs() map[string]string {
 	return t.DryRunOutputs
+}
+
+func (t *TemplateComponent) GetRegion() string {
+	return t.Region
 }

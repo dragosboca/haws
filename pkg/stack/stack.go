@@ -20,8 +20,8 @@ type Stack struct {
 
 func NewStack(template Template) *Stack {
 	var s *session.Session
-	if *template.GetRegion() != "" {
-		s = session.Must(session.NewSession(aws.NewConfig().WithRegion(*template.GetRegion())))
+	if template.GetRegion() != "" {
+		s = session.Must(session.NewSession(aws.NewConfig().WithRegion(template.GetRegion())))
 	} else {
 		s = session.Must(session.NewSession())
 	}

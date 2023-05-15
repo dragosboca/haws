@@ -13,9 +13,11 @@ import (
 )
 
 type Cdn struct {
-	*Haws
 	stack.TemplateComponent
 	recordName string
+	Prefix     string
+	Domain     string
+	Path       string
 }
 
 func (h *Haws) NewCdn() *Cdn {
@@ -30,8 +32,10 @@ func (h *Haws) NewCdn() *Cdn {
 	}
 
 	cdn := &Cdn{
-		Haws:              h,
-		TemplateComponent: stack.NewTemplate(),
+		Prefix:            h.Prefix,
+		Domain:            h.Domain,
+		Path:              h.Path,
+		TemplateComponent: stack.NewTemplate(h.Region),
 		recordName:        recordName,
 	}
 
