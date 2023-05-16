@@ -2,6 +2,8 @@ package haws
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/stack"
@@ -14,13 +16,14 @@ import (
 
 type Cdn struct {
 	stack.TemplateComponent
+	stack.Stack
 	recordName string
 	Prefix     string
 	Domain     string
 	Path       string
 }
 
-func (h *Haws) NewCdn() *Cdn {
+func (h *Haws) CreateCdn() *Cdn {
 
 	// format path for cloudformation
 	path := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
@@ -42,25 +45,37 @@ func (h *Haws) NewCdn() *Cdn {
 	cdn.AddParameter("RecordName", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Record name for Route53 domain",
-	}, recordName)
+		Default:     recordName,
+	})
 
+	// FIXME populate parameters after initialization!!
+	// FIXME maybe use parameter override?
 	cdn.AddParameter("CertificateArn", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The ARN of the certificate generated in us-east-1 for cloudfront distribution",
-	}, h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")])
+		//Default:     h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")],
+	})
 
 	cdn.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Route53 Zone Id",
-	}, h.ZoneId)
+		Default:     h.ZoneId,
+	})
 
 	cdn.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The path in the bucket for the origin of the site",
-	}, path)
+		Default:     path,
+	})
+
+	cdn.AddParameter("LogBucketName", cloudformation.Parameter{
+		Type:        "String",
+		Description: "The name of the bucket used for logs",
+		Default:     fmt.Sprintf("%s-haws-logs-%s", cdn.Prefix, strings.ReplaceAll(cdn.Domain, ".", "-")),
+	})
 
 	cdn.AddResource("log_bucket", &s3.Bucket{
-		BucketName:    fmt.Sprintf("%s-haws-logs-%s", cdn.Prefix, strings.ReplaceAll(cdn.Domain, ".", "-")),
+		BucketName:    cloudformation.Ref("LogBucketName"),
 		AccessControl: "private",
 	})
 
@@ -93,13 +108,13 @@ func (h *Haws) NewCdn() *Cdn {
 			},
 			Origins: []cloudfront.Distribution_Origin{
 				{
-					DomainName: cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Domain")),
+					DomainName: cloudformation.ImportValue(h.templates["bucket"].GetExportName("Domain")),
 					Id:         "cloudfront-hugo",
-					OriginPath: h.Path,
+					OriginPath: cloudformation.Ref("Path"),
 					S3OriginConfig: &cloudfront.Distribution_S3OriginConfig{
 						OriginAccessIdentity: cloudformation.Join("/", []string{
 							"origin-access-identity/cloudfront",
-							cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Oai")),
+							cloudformation.ImportValue(h.templates["bucket"].GetExportName("Oai")),
 						}),
 					},
 				},
@@ -139,6 +154,7 @@ func (h *Haws) NewCdn() *Cdn {
 		},
 	}, "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5")
 
+	cdn.Stack = *stack.NewStack(cdn)
 	return cdn
 }
 
@@ -146,7 +162,15 @@ func (c *Cdn) GetExportName(output string) string {
 	return fmt.Sprintf("HawsCloudfront%s%s%s", output, strings.Title(c.Prefix), strings.Title(c.Path))
 }
 
-func (c *Cdn) GetStackName() *string {
+func (c *Cdn) GetStackName() string {
 	stackName := fmt.Sprintf("%s-%s-cloudfront", c.Prefix, strings.ReplaceAll(c.recordName, ".", "-"))
-	return &stackName
+	return stackName
+}
+
+func (c *Cdn) setParametersValues(h *Haws) []*cloudformation2.Parameter {
+	param := cloudformation2.Parameter{
+		ParameterKey:   aws.String("CertificateArn"),
+		ParameterValue: aws.String(h.templates["certificate"].OutputValue(h.templates["certificate"].GetExportName("Arn"))),
+	}
+	return []*cloudformation2.Parameter{&param}
 }

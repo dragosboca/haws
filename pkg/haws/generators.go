@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/template"
+	template2 "text/template"
 )
 
 const hugoConfig = `
@@ -22,7 +22,8 @@ type deployment struct {
 }
 
 func (h *Haws) getOutputByName(stack string, output string) string {
-	return h.Stacks[stack].Outputs[h.Stacks[stack].GetExportName(output)]
+	val := h.templates[stack].OutputValue(h.templates[stack].GetExportName(output))
+	return val
 }
 
 func (h *Haws) GenerateHugoConfig() {
@@ -32,7 +33,7 @@ func (h *Haws) GenerateHugoConfig() {
 		CloudFrontId: h.getOutputByName("cloudfront", "CloudFrontId"),
 		OriginPath:   fmt.Sprintf("%s/", strings.Trim(h.Path, "/")),
 	}
-	t := template.Must(template.New("deployment").Parse(hugoConfig))
+	t := template2.Must(template2.New("deployment").Parse(hugoConfig))
 	fmt.Printf("\n\n\n Use The folowing minimal configuration for hugo deployment\n")
 	err := t.Execute(os.Stdout, deploymentConfig)
 	if err != nil {

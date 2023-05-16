@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/dragosboca/haws/pkg/haws"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
 )
 
 var (
@@ -25,26 +24,10 @@ var (
 				dryRun,
 			)
 
-			if err := h.GetStackOutput("certificate", h.NewCertificate()); err != nil {
-				fmt.Printf("%v\n", err)
+			if err := h.RefreshOutputs(); err != nil {
+				fmt.Printf("%v", err)
 				os.Exit(1)
 			}
-
-			if err := h.GetStackOutput("bucket", h.NewBucket()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.GetStackOutput("cloudfront", h.NewCdn()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.GetStackOutput("user", h.NewIamUser()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
 			h.GenerateHugoConfig()
 		},
 	}

@@ -2,6 +2,7 @@ package haws
 
 import (
 	"fmt"
+	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
@@ -14,12 +15,13 @@ import (
 
 type User struct {
 	stack.TemplateComponent
+	stack.Stack
 	recordName string
 	Path       string
 	Prefix     string
 }
 
-func (h *Haws) NewIamUser() *User {
+func (h *Haws) CreateIamUser() *User {
 	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
 	if h.Record == "" {
 		recordName = h.Domain
@@ -44,27 +46,27 @@ func (h *Haws) NewIamUser() *User {
 		},
 		Resource: []string{
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.templates["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 				"*",
 			}),
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.templates["bucket"].GetExportName("Name")),
 				cloudformation.Ref("Path"),
 			}),
-			cloudformation.ImportValue(h.Stacks["cloudfront"].GetExportName("Arn")),
+			cloudformation.ImportValue(h.templates["cloudfront"].GetExportName("Arn")),
 		},
 	})
 
 	user.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The path in the bucket for the origin of the site",
-	}, h.Path)
+		Default:     h.Path})
 
 	user.AddParameter("Name", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The name of the policy",
-	}, fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", "")))
+		Default:     fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", ""))})
 
 	user.AddResource("user", &iam.User{
 		Policies: []iam.User_Policy{
@@ -92,6 +94,7 @@ func (h *Haws) NewIamUser() *User {
 		Description: "SecretAccessKey for user",
 	}, "SECRET_ACCESS_KEY")
 
+	user.Stack = *stack.NewStack(user)
 	return user
 }
 
@@ -99,7 +102,11 @@ func (u *User) GetExportName(output string) string {
 	return fmt.Sprintf("HawsIamUser%s%s%s", output, strings.Title(u.Prefix), strings.Title(u.Path))
 }
 
-func (u *User) GetStackName() *string {
+func (u *User) GetStackName() string {
 	stackName := fmt.Sprintf("%s-%s-iam-user", u.Prefix, u.recordName)
-	return &stackName
+	return stackName
+}
+
+func (u *User) setParametersValues(_ *Haws) []*cloudformation2.Parameter {
+	return nil
 }

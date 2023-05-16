@@ -2,6 +2,7 @@ package haws
 
 import (
 	"fmt"
+	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
@@ -13,10 +14,11 @@ import (
 
 type Certificate struct {
 	stack.TemplateComponent
+	stack.Stack
 	Prefix string
 }
 
-func (h *Haws) NewCertificate() *Certificate {
+func (h *Haws) CreateCertificate() *Certificate {
 	certificate := &Certificate{
 		Prefix:            h.Prefix,
 		TemplateComponent: stack.NewTemplate("us-east-1"),
@@ -25,12 +27,12 @@ func (h *Haws) NewCertificate() *Certificate {
 	certificate.AddParameter("Domain", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Domain for which we generate the certificate",
-	}, h.Domain)
+		Default:     h.Domain})
 
 	certificate.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The Route53 zone used for domain validation",
-	}, h.ZoneId)
+		Default:     h.ZoneId})
 
 	certificate.AddResource("HugoSslCertificate", &certificatemanager.Certificate{
 		DomainName: cloudformation.Ref("Domain"),
@@ -54,6 +56,7 @@ func (h *Haws) NewCertificate() *Certificate {
 		},
 	}, "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678")
 
+	certificate.Stack = *stack.NewStack(certificate)
 	return certificate
 }
 
@@ -61,7 +64,11 @@ func (c *Certificate) GetExportName(output string) string {
 	return fmt.Sprintf("HawsCertificate%s%s", output, strings.Title(c.Prefix))
 }
 
-func (c *Certificate) GetStackName() *string {
+func (c *Certificate) GetStackName() string {
 	stackName := fmt.Sprintf("%s-certificate", c.Prefix)
-	return &stackName
+	return stackName
+}
+
+func (c *Certificate) setParametersValues(_ *Haws) []*cloudformation2.Parameter {
+	return nil
 }

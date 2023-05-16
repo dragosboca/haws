@@ -2,6 +2,7 @@ package haws
 
 import (
 	"fmt"
+	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/bucketpolicy"
@@ -15,10 +16,11 @@ import (
 
 type Bucket struct {
 	stack.TemplateComponent
+	stack.Stack
 	Prefix string
 }
 
-func (h *Haws) NewBucket() *Bucket {
+func (h *Haws) CreateBucket() *Bucket {
 	bucket := &Bucket{
 		Prefix:            h.Prefix,
 		TemplateComponent: stack.NewTemplate(h.Region),
@@ -41,8 +43,8 @@ func (h *Haws) NewBucket() *Bucket {
 		cloudformation.Parameter{
 			Type:        "String",
 			Description: "The name of the bucket with the content",
+			Default:     strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))),
 		},
-		strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))),
 	)
 
 	bucket.AddResource("oai", &cloudfront.CloudFrontOriginAccessIdentity{
@@ -94,6 +96,7 @@ func (h *Haws) NewBucket() *Bucket {
 		},
 	}, "MockOai")
 
+	bucket.Stack = *stack.NewStack(bucket)
 	return bucket
 }
 
@@ -101,7 +104,11 @@ func (b *Bucket) GetExportName(output string) string {
 	return fmt.Sprintf("HawsBucket%s%s", output, strings.Title(b.Prefix))
 }
 
-func (b *Bucket) GetStackName() *string {
+func (b *Bucket) GetStackName() string {
 	stackName := fmt.Sprintf("%s-bucket", b.Prefix)
-	return &stackName
+	return stackName
+}
+
+func (b *Bucket) setParametersValues(_ *Haws) []*cloudformation2.Parameter {
+	return nil
 }

@@ -2,6 +2,7 @@ package haws
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"os"
 	"strings"
 
@@ -19,9 +20,19 @@ type Haws struct {
 	Record string
 	Path   string
 
-	dryRun bool
+	dryRun    bool
+	order     []string
+	templates map[string]template // FIXME here
+}
 
-	Stacks map[string]*stack.Stack
+type params interface {
+	setParametersValues(*Haws) []*cloudformation.Parameter
+}
+
+type template interface {
+	stack.Template
+	stack.Stacker
+	params
 }
 
 func getZoneDomain(zoneId string) (string, error) {
@@ -41,6 +52,10 @@ func getZoneDomain(zoneId string) (string, error) {
 
 	return domain, nil
 }
+func (h *Haws) addStack(name string, template template) {
+	h.order = append(h.order, name)
+	h.templates[name] = template
+}
 
 func New(prefix string, region string, record string, zoneId string, path string, dryRun bool) Haws {
 
@@ -50,32 +65,40 @@ func New(prefix string, region string, record string, zoneId string, path string
 		os.Exit(1)
 	}
 
-	return Haws{
+	h := Haws{
 		Prefix: prefix,
 		ZoneId: zoneId,
 		Domain: domain,
 		Region: region,
 		Record: record,
 		Path:   path,
-
 		dryRun: dryRun,
-
-		Stacks: make(map[string]*stack.Stack),
 	}
+
+	h.addStack("certificate", h.CreateCertificate()) // in US-EAST-1 => cannot be imported
+	h.addStack("bucket", h.CreateBucket())           // in h.Region
+	h.addStack("cloudfront", h.CreateCdn())          // in h.Region
+	h.addStack("user", h.CreateIamUser())            // global
+	return h
 }
 
-func (h *Haws) DeployStack(name string, template stack.Template) error {
-	h.Stacks[name] = stack.NewStack(template)
-	if h.dryRun {
-		fmt.Printf("DryRunning %s\n", name)
-		return h.Stacks[name].DryRun()
-	} else {
-		fmt.Printf("Running %s\n", name)
-		return h.Stacks[name].Run()
+func (h *Haws) Deploy() error {
+	for _, name := range h.order {
+		if err := h.templates[name].Deploy(h.dryRun, name, h.templates[name].setParametersValues(h)); err != nil {
+			return err
+		}
+		if err := h.templates[name].GetOutputs(h.dryRun); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (h *Haws) GetStackOutput(name string, template stack.Template) error {
-	h.Stacks[name] = stack.NewStack(template)
-	return h.Stacks[name].GetOutputs()
+func (h *Haws) RefreshOutputs() error {
+	for _, name := range h.order {
+		if err := h.templates[name].GetOutputs(h.dryRun); err != nil {
+			return err
+		}
+	}
+	return nil
 }

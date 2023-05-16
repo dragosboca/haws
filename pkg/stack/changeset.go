@@ -2,6 +2,7 @@ package stack
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -10,25 +11,15 @@ import (
 
 const EmptyChangeSet = "The submitted information didn't contain changes. Submit different information to create a change set."
 
-// FIXME use type assertions on error
-// FIXME FIXME: https://github.com/aws/aws-sdk/issues/44
 func (st *Stack) stackExist() bool {
 	_, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: st.GetStackName(),
+		StackName: aws.String(st.GetStackName()),
 	})
-	//if err != nil {
-	//	if aerr, ok := err.(awserr.Error); ok{
-	//		switch aerr.Code() {
-	//		case cloudformation.AmazonCloudFormationException:
-	//
-	//		}
-	//	}
-	//}
 	return err == nil
 }
 
 func (st *Stack) templateJson() (string, error) {
-  	template := st.Build()
+	template := st.Build()
 	templateBody, err := template.JSON()
 	if err != nil {
 		fmt.Printf("Create template error: %s\n", err)
@@ -37,7 +28,7 @@ func (st *Stack) templateJson() (string, error) {
 	return string(templateBody), nil
 }
 
-func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
+func (st *Stack) initialChangeSet(templateBody string, params []*cloudformation.Parameter) (string, string, error) {
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 
@@ -46,17 +37,17 @@ func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
 	csType := "CREATE"
 	if st.stackExist() {
 		csType = "UPDATE"
-		fmt.Printf("Updating stack: %s with changeset: %s\n", *st.GetStackName(), csName)
+		fmt.Printf("Updating stack: %s with changeset: %s\n", st.GetStackName(), csName)
 	} else {
-		fmt.Printf("Creating stack: %s with changeset: %s\n", *st.GetStackName(), csName)
+		fmt.Printf("Creating stack: %s with changeset: %s\n", st.GetStackName(), csName)
 	}
 
 	_, err := st.CloudFormation.CreateChangeSet(&cloudformation.CreateChangeSetInput{
 		ClientToken:   &csName,
 		ChangeSetName: &csName,
 		ChangeSetType: &csType,
-		Parameters:    st.GetParameters(),
-		StackName:     st.GetStackName(),
+		Parameters:    params, // FIXME this can be used to override parameters!!
+		StackName:     aws.String(st.GetStackName()),
 		TemplateBody:  &templateBody,
 	})
 	if err != nil {
@@ -69,12 +60,12 @@ func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 	fmt.Printf("Waiting for the changeset %s creation to complete\n", csName)
 	err := st.CloudFormation.WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
 		ChangeSetName: &csName,
-		StackName:     st.GetStackName(),
+		StackName:     aws.String(st.GetStackName()),
 	})
 	if err != nil {
 		desc, err := st.CloudFormation.DescribeChangeSet(&cloudformation.DescribeChangeSetInput{
 			ChangeSetName: &csName,
-			StackName:     st.GetStackName(),
+			StackName:     aws.String(st.GetStackName()),
 		})
 		if err != nil {
 			return false, err
@@ -83,7 +74,7 @@ func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 			fmt.Printf("Deleting empty changeset %s\n", csName)
 			_, err := st.CloudFormation.DeleteChangeSet(&cloudformation.DeleteChangeSetInput{
 				ChangeSetName: &csName,
-				StackName:     st.GetStackName(),
+				StackName:     aws.String(st.GetStackName()),
 			})
 			if err != nil {
 				return false, err
@@ -97,11 +88,11 @@ func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 }
 
 func (st *Stack) executeChangeSet(csName string, csType string) error {
-	fmt.Printf("Executing change set: %s on stack %s\n", csName, *st.GetStackName())
+	fmt.Printf("Executing change set: %s on stack %s\n", csName, st.GetStackName())
 	_, err := st.CloudFormation.ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
 		ChangeSetName:      &csName,
 		ClientRequestToken: &csName,
-		StackName:          st.GetStackName(),
+		StackName:          aws.String(st.GetStackName()),
 	})
 	if err != nil {
 		return err
@@ -110,11 +101,11 @@ func (st *Stack) executeChangeSet(csName string, csType string) error {
 	fmt.Printf("Waiting for the changeset %s execution to complete\n", csName)
 	if csType == "CREATE" {
 		err = st.CloudFormation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-			StackName: st.GetStackName(),
+			StackName: aws.String(st.GetStackName()),
 		})
 	} else {
 		err = st.CloudFormation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-			StackName: st.GetStackName(),
+			StackName: aws.String(st.GetStackName()),
 		})
 	}
 	return err
