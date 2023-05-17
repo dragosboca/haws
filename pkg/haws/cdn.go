@@ -54,7 +54,6 @@ func (h *Haws) CreateCdn() *Cdn {
 	cdn.AddParameter("CertificateArn", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The ARN of the certificate generated in us-east-1 for cloudfront distribution",
-		//Default:     h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")],
 	})
 
 	cdn.AddParameter("ZoneId", cloudformation.Parameter{
