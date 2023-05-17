@@ -3,25 +3,26 @@ package haws
 import (
 	"fmt"
 	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
-	"github.com/dragosboca/haws/pkg/stack"
+	"github.com/dragosboca/haws/pkg/runner"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/certificatemanager"
 )
 
 type Certificate struct {
-	stack.TemplateComponent
-	stack.Stack
+	template.Template
+	runner.ChangeSet
 	Prefix string
 }
 
 func (h *Haws) CreateCertificate() *Certificate {
 	certificate := &Certificate{
-		Prefix:            h.Prefix,
-		TemplateComponent: stack.NewTemplate("us-east-1"),
+		Prefix:   h.Prefix,
+		Template: template.NewTemplate("us-east-1"),
 	}
 
 	certificate.AddParameter("Domain", cloudformation.Parameter{
@@ -56,7 +57,7 @@ func (h *Haws) CreateCertificate() *Certificate {
 		},
 	}, "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678")
 
-	certificate.Stack = *stack.NewStack(certificate)
+	certificate.ChangeSet = *runner.NewChangeSet(certificate)
 	return certificate
 }
 

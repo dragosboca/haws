@@ -3,13 +3,14 @@ package haws
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/template"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 
-	"github.com/dragosboca/haws/pkg/stack"
+	"github.com/dragosboca/haws/pkg/runner"
 )
 
 type Haws struct {
@@ -22,16 +23,16 @@ type Haws struct {
 
 	dryRun    bool
 	order     []string
-	templates map[string]template // FIXME here
+	templates map[string]part // FIXME here
 }
 
 type params interface {
 	setParametersValues(*Haws) []*cloudformation.Parameter
 }
 
-type template interface {
-	stack.Template
-	stack.Stacker
+type part interface {
+	template.Stack
+	runner.Runner //FIXME rename
 	params
 }
 
@@ -52,7 +53,7 @@ func getZoneDomain(zoneId string) (string, error) {
 
 	return domain, nil
 }
-func (h *Haws) addStack(name string, template template) {
+func (h *Haws) addStack(name string, template part) {
 	h.order = append(h.order, name)
 	h.templates[name] = template
 }

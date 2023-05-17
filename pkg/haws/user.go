@@ -3,19 +3,20 @@ package haws
 import (
 	"fmt"
 	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
 	"github.com/dragosboca/haws/pkg/resources/iampolicy"
-	"github.com/dragosboca/haws/pkg/stack"
+	"github.com/dragosboca/haws/pkg/runner"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/iam"
 )
 
 type User struct {
-	stack.TemplateComponent
-	stack.Stack
+	template.Template
+	runner.ChangeSet
 	recordName string
 	Path       string
 	Prefix     string
@@ -28,10 +29,10 @@ func (h *Haws) CreateIamUser() *User {
 	}
 
 	user := &User{
-		Prefix:            h.Prefix,
-		Path:              h.Path,
-		TemplateComponent: stack.NewTemplate(h.Region),
-		recordName:        recordName,
+		Prefix:     h.Prefix,
+		Path:       h.Path,
+		Template:   template.NewTemplate(h.Region),
+		recordName: recordName,
 	}
 
 	doc := iampolicy.New("PolicyForCloudfrontPrivateContent")
@@ -94,7 +95,7 @@ func (h *Haws) CreateIamUser() *User {
 		Description: "SecretAccessKey for user",
 	}, "SECRET_ACCESS_KEY")
 
-	user.Stack = *stack.NewStack(user)
+	user.ChangeSet = *runner.NewChangeSet(user)
 	return user
 }
 

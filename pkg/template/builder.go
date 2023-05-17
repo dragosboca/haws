@@ -1,10 +1,10 @@
-package stack
+package template
 
 import (
 	cfn "github.com/awslabs/goformation/v4/cloudformation"
 )
 
-type Template interface {
+type Stack interface {
 	Build() *cfn.Template
 	GetStackName() string
 	GetRegion() string
@@ -12,7 +12,7 @@ type Template interface {
 	GetDryRunOutputs() map[string]string
 }
 
-type TemplateComponent struct {
+type Template struct {
 	Region        string
 	Parameters    map[string]cfn.Parameter
 	Resources     map[string]cfn.Resource
@@ -20,8 +20,8 @@ type TemplateComponent struct {
 	DryRunOutputs map[string]string
 }
 
-func NewTemplate(region string) TemplateComponent {
-	b := TemplateComponent{
+func NewTemplate(region string) Template {
+	b := Template{
 		Parameters:    make(map[string]cfn.Parameter, 0),
 		Resources:     make(map[string]cfn.Resource, 0),
 		Outputs:       make(map[string]cfn.Output, 0),
@@ -32,20 +32,20 @@ func NewTemplate(region string) TemplateComponent {
 	return b
 }
 
-func (t *TemplateComponent) AddParameter(name string, parameter cfn.Parameter) {
+func (t *Template) AddParameter(name string, parameter cfn.Parameter) {
 	t.Parameters[name] = parameter
 }
 
-func (t *TemplateComponent) AddResource(name string, resource cfn.Resource) {
+func (t *Template) AddResource(name string, resource cfn.Resource) {
 	t.Resources[name] = resource
 }
 
-func (t *TemplateComponent) AddOutput(name string, output cfn.Output, dryRunValue string) {
+func (t *Template) AddOutput(name string, output cfn.Output, dryRunValue string) {
 	t.Outputs[name] = output
 	t.DryRunOutputs[name] = dryRunValue
 }
 
-func (t *TemplateComponent) Build() *cfn.Template {
+func (t *Template) Build() *cfn.Template {
 	tp := cfn.NewTemplate()
 	for paramName, ParamDef := range t.Parameters {
 		tp.Parameters[paramName] = ParamDef
@@ -61,10 +61,10 @@ func (t *TemplateComponent) Build() *cfn.Template {
 	return tp
 }
 
-func (t *TemplateComponent) GetDryRunOutputs() map[string]string {
+func (t *Template) GetDryRunOutputs() map[string]string {
 	return t.DryRunOutputs
 }
 
-func (t *TemplateComponent) GetRegion() string {
+func (t *Template) GetRegion() string {
 	return t.Region
 }

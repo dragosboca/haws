@@ -1,7 +1,8 @@
-package stack
+package runner
 
 import (
 	"fmt"
+	"github.com/dragosboca/haws/pkg/template"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,13 +11,13 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type Stack struct {
-	Template
+type ChangeSet struct {
+	template.Stack
 	CloudFormation *cloudformation.CloudFormation
 	Outputs        map[string]string
 }
 
-type Stacker interface {
+type Runner interface {
 	Deploy(bool, string, []*cloudformation.Parameter) error
 	GetOutputs(bool) error
 	OutputValue(string) string
@@ -29,26 +30,26 @@ func newSession(region string) *session.Session {
 	return session.Must(session.NewSession())
 }
 
-func NewStack(template Template) *Stack {
-	return &Stack{
-		Template:       template,
+func NewChangeSet(template template.Stack) *ChangeSet {
+	return &ChangeSet{
+		Stack:          template,
 		CloudFormation: cloudformation.New(newSession(template.GetRegion())),
 		Outputs:        make(map[string]string),
 	}
 }
 
-func (st *Stack) run(params []*cloudformation.Parameter) error {
-	templateBody, err := st.templateJson()
+func (cs *ChangeSet) run(params []*cloudformation.Parameter) error {
+	templateBody, err := cs.templateJson()
 	if err != nil {
 		return err
 	}
 
-	csName, csType, err := st.initialChangeSet(templateBody, params)
+	csName, csType, err := cs.initialChangeSet(templateBody, params)
 	if err != nil {
 		return err
 	}
 
-	ok, err := st.waitForChangeSet(csName)
+	ok, err := cs.waitForChangeSet(csName)
 	if err != nil {
 		return err
 	}
@@ -56,15 +57,15 @@ func (st *Stack) run(params []*cloudformation.Parameter) error {
 		return nil
 	}
 
-	if err := st.executeChangeSet(csName, csType); err != nil {
+	if err := cs.executeChangeSet(csName, csType); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (st *Stack) dryRun() error {
-	templateBody, err := st.templateJson()
+func (cs *ChangeSet) dryRun() error {
+	templateBody, err := cs.templateJson()
 	if err != nil {
 		return err
 	}
@@ -74,46 +75,46 @@ func (st *Stack) dryRun() error {
 	return nil
 }
 
-func (st *Stack) GetOutputs(dryRun bool) error {
+func (cs *ChangeSet) GetOutputs(dryRun bool) error {
 	if dryRun {
-		for k, v := range st.GetDryRunOutputs() {
-			st.Outputs[k] = v
+		for k, v := range cs.GetDryRunOutputs() {
+			cs.Outputs[k] = v
 		}
 	} else {
-		stack, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{StackName: aws.String(st.GetStackName())})
+		stack, err := cs.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{StackName: aws.String(cs.GetStackName())})
 		if err != nil {
 			return err
 		}
 
 		if len(stack.Stacks) > 1 {
-			return fmt.Errorf("multiple results for the same stack name %s", st.GetStackName())
+			return fmt.Errorf("multiple results for the same stack name %s", cs.GetStackName())
 		}
 
 		for _, a := range stack.Stacks[0].Outputs {
-			st.Outputs[*a.OutputKey] = *a.OutputValue
+			cs.Outputs[*a.OutputKey] = *a.OutputValue
 		}
 	}
 
 	return nil
 }
 
-func (st *Stack) Deploy(dryRun bool, name string, params []*cloudformation.Parameter) error {
+func (cs *ChangeSet) Deploy(dryRun bool, name string, params []*cloudformation.Parameter) error {
 	if dryRun {
 		fmt.Printf("DryRunning %s\n", name)
-		if err := st.dryRun(); err != nil {
+		if err := cs.dryRun(); err != nil {
 			return err
 		}
 	} else {
 		fmt.Printf("Running %s\n", name)
-		if err := st.run(params); err != nil {
+		if err := cs.run(params); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (st *Stack) OutputValue(name string) string {
-	if val, ok := st.Outputs[name]; ok {
+func (cs *ChangeSet) OutputValue(name string) string {
+	if val, ok := cs.Outputs[name]; ok {
 		return val
 	}
 	return ""

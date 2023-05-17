@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
-	"github.com/dragosboca/haws/pkg/stack"
+	"github.com/dragosboca/haws/pkg/runner"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
@@ -15,8 +16,8 @@ import (
 )
 
 type Cdn struct {
-	stack.TemplateComponent
-	stack.Stack
+	template.Template
+	runner.ChangeSet
 	recordName string
 	Prefix     string
 	Domain     string
@@ -35,11 +36,11 @@ func (h *Haws) CreateCdn() *Cdn {
 	}
 
 	cdn := &Cdn{
-		Prefix:            h.Prefix,
-		Domain:            h.Domain,
-		Path:              h.Path,
-		TemplateComponent: stack.NewTemplate(h.Region),
-		recordName:        recordName,
+		Prefix:     h.Prefix,
+		Domain:     h.Domain,
+		Path:       h.Path,
+		Template:   template.NewTemplate(h.Region),
+		recordName: recordName,
 	}
 
 	cdn.AddParameter("RecordName", cloudformation.Parameter{
@@ -154,7 +155,7 @@ func (h *Haws) CreateCdn() *Cdn {
 		},
 	}, "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632BHDS5")
 
-	cdn.Stack = *stack.NewStack(cdn)
+	cdn.ChangeSet = *runner.NewChangeSet(cdn)
 	return cdn
 }
 

@@ -3,11 +3,12 @@ package haws
 import (
 	"fmt"
 	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/bucketpolicy"
 	"github.com/dragosboca/haws/pkg/resources/customtags"
-	"github.com/dragosboca/haws/pkg/stack"
+	"github.com/dragosboca/haws/pkg/runner"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/cloudfront"
@@ -15,15 +16,15 @@ import (
 )
 
 type Bucket struct {
-	stack.TemplateComponent
-	stack.Stack
+	template.Template
+	*runner.ChangeSet
 	Prefix string
 }
 
 func (h *Haws) CreateBucket() *Bucket {
 	bucket := &Bucket{
-		Prefix:            h.Prefix,
-		TemplateComponent: stack.NewTemplate(h.Region),
+		Prefix:   h.Prefix,
+		Template: template.NewTemplate(h.Region),
 	}
 
 	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")
@@ -96,7 +97,7 @@ func (h *Haws) CreateBucket() *Bucket {
 		},
 	}, "MockOai")
 
-	bucket.Stack = *stack.NewStack(bucket)
+	bucket.ChangeSet = runner.NewChangeSet(bucket)
 	return bucket
 }
 
