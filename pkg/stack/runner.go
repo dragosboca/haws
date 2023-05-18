@@ -1,4 +1,4 @@
-package runner
+package stack
 
 import (
 	"fmt"
@@ -13,12 +13,13 @@ import (
 
 type ChangeSet struct {
 	template.Stack
+	Name           string
 	CloudFormation *cloudformation.CloudFormation
 	Outputs        map[string]string
 }
 
 type Runner interface {
-	Deploy(bool, string, []*cloudformation.Parameter) error
+	Deploy(bool, []*cloudformation.Parameter) error
 	GetOutputs(bool) error
 	OutputValue(string) string
 }
@@ -98,19 +99,19 @@ func (cs *ChangeSet) GetOutputs(dryRun bool) error {
 	return nil
 }
 
-func (cs *ChangeSet) Deploy(dryRun bool, name string, params []*cloudformation.Parameter) error {
+func (cs *ChangeSet) Deploy(dryRun bool, params []*cloudformation.Parameter) error {
 	if dryRun {
-		fmt.Printf("DryRunning %s\n", name)
+		fmt.Printf("DryRunning %s\n", cs.Name)
 		if err := cs.dryRun(); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Running %s\n", name)
+		fmt.Printf("Running %s\n", cs.Name)
 		if err := cs.run(params); err != nil {
 			return err
 		}
 	}
-	return nil
+	return cs.GetOutputs(dryRun)
 }
 
 func (cs *ChangeSet) OutputValue(name string) string {

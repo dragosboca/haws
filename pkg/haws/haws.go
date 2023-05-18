@@ -2,16 +2,21 @@ package haws
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/dragosboca/haws/pkg/stack"
 	"github.com/dragosboca/haws/pkg/template"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-
-	"github.com/dragosboca/haws/pkg/runner"
 )
+
+type Part interface {
+	stack.Runner
+	template.Stack
+}
 
 type Haws struct {
 	Prefix string
@@ -21,19 +26,12 @@ type Haws struct {
 	Record string
 	Path   string
 
-	dryRun    bool
-	order     []string
-	templates map[string]part // FIXME here
-}
+	dryRun bool
 
-type params interface {
-	setParametersValues(*Haws) []*cloudformation.Parameter
-}
-
-type part interface {
-	template.Stack
-	runner.Runner //FIXME rename
-	params
+	bucket      Part
+	certificate Part
+	cloudfront  Part
+	user        Part
 }
 
 func getZoneDomain(zoneId string) (string, error) {
@@ -53,12 +51,8 @@ func getZoneDomain(zoneId string) (string, error) {
 
 	return domain, nil
 }
-func (h *Haws) addStack(name string, template part) {
-	h.order = append(h.order, name)
-	h.templates[name] = template
-}
 
-func New(prefix string, region string, record string, zoneId string, path string, dryRun bool) Haws {
+func New(prefix string, region string, record string, zoneId string, path string, dryRun bool) *Haws {
 
 	domain, err := getZoneDomain(zoneId)
 	if err != nil {
@@ -76,30 +70,64 @@ func New(prefix string, region string, record string, zoneId string, path string
 		dryRun: dryRun,
 	}
 
-	h.addStack("certificate", h.CreateCertificate()) // in US-EAST-1 => cannot be imported
-	h.addStack("bucket", h.CreateBucket())           // in h.Region
-	h.addStack("cloudfront", h.CreateCdn())          // in h.Region
-	h.addStack("user", h.CreateIamUser())            // global
+	return &h
+}
+
+func (h *Haws) WithDefaults() *Haws {
+	h.bucket = h.CreateBucket("bucket")
+	h.certificate = h.CreateCertificate("certificate")
+	h.cloudfront = h.CreateCdn("cloudfront")
+	h.user = h.CreateIamUser("user")
+
 	return h
 }
 
 func (h *Haws) Deploy() error {
-	for _, name := range h.order {
-		if err := h.templates[name].Deploy(h.dryRun, name, h.templates[name].setParametersValues(h)); err != nil {
-			return err
-		}
-		if err := h.templates[name].GetOutputs(h.dryRun); err != nil {
-			return err
-		}
+	err := h.bucket.Deploy(h.dryRun, []*cloudformation.Parameter{})
+	if err != nil {
+		return err
 	}
+
+	err = h.certificate.Deploy(h.dryRun, []*cloudformation.Parameter{})
+	if err != nil {
+		return err
+	}
+
+	err = h.cloudfront.Deploy(h.dryRun, []*cloudformation.Parameter{{
+		ParameterKey:   aws.String("CertificateArn"),
+		ParameterValue: aws.String(h.certificate.OutputValue(h.certificate.GetExportName("Arn"))),
+	}})
+	if err != nil {
+		return err
+	}
+
+	err = h.user.Deploy(h.dryRun, []*cloudformation.Parameter{})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (h *Haws) RefreshOutputs() error {
-	for _, name := range h.order {
-		if err := h.templates[name].GetOutputs(h.dryRun); err != nil {
-			return err
-		}
+func (h *Haws) GetOutputs() error {
+	err := h.bucket.GetOutputs(h.dryRun)
+	if err != nil {
+		return err
+	}
+
+	err = h.certificate.GetOutputs(h.dryRun)
+	if err != nil {
+		return err
+	}
+
+	err = h.cloudfront.GetOutputs(h.dryRun)
+	if err != nil {
+		return err
+	}
+
+	err = h.user.GetOutputs(h.dryRun)
+	if err != nil {
+		return err
 	}
 	return nil
 }

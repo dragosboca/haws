@@ -2,12 +2,11 @@ package haws
 
 import (
 	"fmt"
-	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
-	"github.com/dragosboca/haws/pkg/runner"
+	"github.com/dragosboca/haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/certificatemanager"
@@ -15,15 +14,16 @@ import (
 
 type Certificate struct {
 	template.Template
-	runner.ChangeSet
+	stack.ChangeSet
 	Prefix string
 }
 
-func (h *Haws) CreateCertificate() *Certificate {
+func (h *Haws) CreateCertificate(name string) *Certificate {
 	certificate := &Certificate{
 		Prefix:   h.Prefix,
 		Template: template.NewTemplate("us-east-1"),
 	}
+	certificate.Name = name
 
 	certificate.AddParameter("Domain", cloudformation.Parameter{
 		Type:        "String",
@@ -57,7 +57,7 @@ func (h *Haws) CreateCertificate() *Certificate {
 		},
 	}, "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678")
 
-	certificate.ChangeSet = *runner.NewChangeSet(certificate)
+	certificate.ChangeSet = *stack.NewChangeSet(certificate)
 	return certificate
 }
 
@@ -68,8 +68,4 @@ func (c *Certificate) GetExportName(output string) string {
 func (c *Certificate) GetStackName() string {
 	stackName := fmt.Sprintf("%s-certificate", c.Prefix)
 	return stackName
-}
-
-func (c *Certificate) setParametersValues(_ *Haws) []*cloudformation2.Parameter {
-	return nil
 }

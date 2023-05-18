@@ -22,7 +22,7 @@ type deployment struct {
 }
 
 func (h *Haws) getOutputByName(stack string, output string) string {
-	val := h.templates[stack].OutputValue(h.templates[stack].GetExportName(output))
+	val := h.template[stack].OutputValue(h.template[stack].GetExportName(output))
 	return val
 }
 

@@ -2,13 +2,12 @@ package haws
 
 import (
 	"fmt"
-	cloudformation2 "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/dragosboca/haws/pkg/template"
 	"strings"
 
 	"github.com/dragosboca/haws/pkg/resources/customtags"
 	"github.com/dragosboca/haws/pkg/resources/iampolicy"
-	"github.com/dragosboca/haws/pkg/runner"
+	"github.com/dragosboca/haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
 	"github.com/awslabs/goformation/v4/cloudformation/iam"
@@ -16,13 +15,13 @@ import (
 
 type User struct {
 	template.Template
-	runner.ChangeSet
+	stack.ChangeSet
 	recordName string
 	Path       string
 	Prefix     string
 }
 
-func (h *Haws) CreateIamUser() *User {
+func (h *Haws) CreateIamUser(name string) *User {
 	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
 	if h.Record == "" {
 		recordName = h.Domain
@@ -34,6 +33,7 @@ func (h *Haws) CreateIamUser() *User {
 		Template:   template.NewTemplate(h.Region),
 		recordName: recordName,
 	}
+	user.Name = name
 
 	doc := iampolicy.New("PolicyForCloudfrontPrivateContent")
 	doc.AddStatement("haws", iampolicy.Statement{
@@ -47,15 +47,15 @@ func (h *Haws) CreateIamUser() *User {
 		},
 		Resource: []string{
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.templates["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.bucket.GetExportName("Name")),
 				cloudformation.Ref("Path"),
 				"*",
 			}),
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.templates["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(h.bucket.GetExportName("Name")),
 				cloudformation.Ref("Path"),
 			}),
-			cloudformation.ImportValue(h.templates["cloudfront"].GetExportName("Arn")),
+			cloudformation.ImportValue(h.cloudfront.GetExportName("Arn")),
 		},
 	})
 
@@ -95,7 +95,7 @@ func (h *Haws) CreateIamUser() *User {
 		Description: "SecretAccessKey for user",
 	}, "SECRET_ACCESS_KEY")
 
-	user.ChangeSet = *runner.NewChangeSet(user)
+	user.ChangeSet = *stack.NewChangeSet(user)
 	return user
 }
 
@@ -106,8 +106,4 @@ func (u *User) GetExportName(output string) string {
 func (u *User) GetStackName() string {
 	stackName := fmt.Sprintf("%s-%s-iam-user", u.Prefix, u.recordName)
 	return stackName
-}
-
-func (u *User) setParametersValues(_ *Haws) []*cloudformation2.Parameter {
-	return nil
 }

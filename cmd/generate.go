@@ -22,10 +22,11 @@ var (
 				viper.GetString("zone_id"),
 				viper.GetString("bucket_path"),
 				dryRun,
-			)
+			).WithDefaults()
 
-			if err := h.RefreshOutputs(); err != nil {
-				fmt.Printf("%v", err)
+			err := h.GetOutputs()
+			if err != nil {
+				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
 			h.GenerateHugoConfig()
