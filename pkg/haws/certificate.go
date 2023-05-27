@@ -13,8 +13,8 @@ import (
 )
 
 type Certificate struct {
-	template.Template
-	stack.ChangeSet
+	*template.Template
+	*stack.ChangeSet
 	Prefix string
 }
 
@@ -23,6 +23,7 @@ func (h *Haws) CreateCertificate(name string) *Certificate {
 		Prefix:   h.Prefix,
 		Template: template.NewTemplate("us-east-1"),
 	}
+	certificate.ChangeSet = stack.NewChangeSet(certificate)
 	certificate.Name = name
 
 	certificate.AddParameter("Domain", cloudformation.Parameter{
@@ -57,7 +58,6 @@ func (h *Haws) CreateCertificate(name string) *Certificate {
 		},
 	}, "arn:aws:acm:us-east-1:123456789012:certificate/123456789012-1234-1234-1234-12345678")
 
-	certificate.ChangeSet = *stack.NewChangeSet(certificate)
 	return certificate
 }
 

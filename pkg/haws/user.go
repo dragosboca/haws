@@ -14,8 +14,8 @@ import (
 )
 
 type User struct {
-	template.Template
-	stack.ChangeSet
+	*template.Template
+	*stack.ChangeSet
 	recordName string
 	Path       string
 	Prefix     string
@@ -33,6 +33,7 @@ func (h *Haws) CreateIamUser(name string) *User {
 		Template:   template.NewTemplate(h.Region),
 		recordName: recordName,
 	}
+	user.ChangeSet = stack.NewChangeSet(user)
 	user.Name = name
 
 	doc := iampolicy.New("PolicyForCloudfrontPrivateContent")
@@ -95,7 +96,6 @@ func (h *Haws) CreateIamUser(name string) *User {
 		Description: "SecretAccessKey for user",
 	}, "SECRET_ACCESS_KEY")
 
-	user.ChangeSet = *stack.NewChangeSet(user)
 	return user
 }
 

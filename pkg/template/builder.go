@@ -20,7 +20,7 @@ type Template struct {
 	DryRunOutputs map[string]string
 }
 
-func NewTemplate(region string) Template {
+func NewTemplate(region string) *Template {
 	b := Template{
 		Parameters:    make(map[string]cfn.Parameter, 0),
 		Resources:     make(map[string]cfn.Resource, 0),
@@ -29,7 +29,7 @@ func NewTemplate(region string) Template {
 		Region:        region,
 	}
 
-	return b
+	return &b
 }
 
 func (t *Template) AddParameter(name string, parameter cfn.Parameter) {

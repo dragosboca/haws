@@ -15,7 +15,7 @@ import (
 )
 
 type Bucket struct {
-	template.Template
+	*template.Template
 	*stack.ChangeSet
 	Prefix string
 }
@@ -25,6 +25,7 @@ func (h *Haws) CreateBucket(name string) *Bucket {
 		Prefix:   h.Prefix,
 		Template: template.NewTemplate(h.Region),
 	}
+	bucket.ChangeSet = stack.NewChangeSet(bucket)
 	bucket.Name = name
 
 	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")
@@ -97,7 +98,6 @@ func (h *Haws) CreateBucket(name string) *Bucket {
 		},
 	}, "MockOai")
 
-	bucket.ChangeSet = stack.NewChangeSet(bucket)
 	return bucket
 }
 
