@@ -1,4 +1,4 @@
-package haws
+package components
 
 import (
 	"fmt"
@@ -20,22 +20,34 @@ type Cdn struct {
 	Path       string
 }
 
-func (h *Haws) NewCdn() *Cdn {
+type CdnInput struct {
+	Prefix         string
+	Path           string
+	Region         string
+	Domain         string
+	Record         string
+	CertificateArn string
+	BucketDomain   string
+	BucketOAI      string
+	ZoneId         string
+}
+
+func NewCdn(c *CdnInput) *Cdn {
 
 	// format path for cloudformation
-	path := fmt.Sprintf("/%s", strings.Trim(h.Path, "/"))
+	path := fmt.Sprintf("/%s", strings.Trim(c.Path, "/"))
 
 	// format rec
-	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
-	if h.Record == "" {
-		recordName = h.Domain
+	recordName := fmt.Sprintf("%s.%s", c.Record, c.Domain)
+	if c.Record == "" {
+		recordName = c.Domain
 	}
 
 	cdn := &Cdn{
-		Prefix:            h.Prefix,
-		Domain:            h.Domain,
-		Path:              h.Path,
-		TemplateComponent: stack.NewTemplate(h.Region),
+		Prefix:            c.Prefix,
+		Domain:            c.Domain,
+		Path:              c.Path,
+		TemplateComponent: stack.NewTemplate(c.Region),
 		recordName:        recordName,
 	}
 
@@ -46,13 +58,13 @@ func (h *Haws) NewCdn() *Cdn {
 
 	cdn.AddParameter("CertificateArn", cloudformation.Parameter{
 		Type:        "String",
-		Description: "The ARN of the certificate generated in us-east-1 for cloudfront distribution",
-	}, h.Stacks["certificate"].Outputs[h.Stacks["certificate"].GetExportName("Arn")])
+		Description: "The ARN of the certificate generated in us-east-1 for cloudfront distribution", // FIXME: this is not working because one cannot reference a resource from another region
+	}, c.CertificateArn)
 
 	cdn.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Route53 Zone Id",
-	}, h.ZoneId)
+	}, c.ZoneId)
 
 	cdn.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
@@ -93,19 +105,19 @@ func (h *Haws) NewCdn() *Cdn {
 			},
 			Origins: []cloudfront.Distribution_Origin{
 				{
-					DomainName: cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Domain")),
+					DomainName: cloudformation.ImportValue(c.BucketDomain),
 					Id:         "cloudfront-hugo",
-					OriginPath: h.Path,
+					OriginPath: c.Path,
 					S3OriginConfig: &cloudfront.Distribution_S3OriginConfig{
 						OriginAccessIdentity: cloudformation.Join("/", []string{
 							"origin-access-identity/cloudfront",
-							cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Oai")),
+							cloudformation.ImportValue(c.BucketOAI),
 						}),
 					},
 				},
 			},
 			ViewerCertificate: &cloudfront.Distribution_ViewerCertificate{
-				AcmCertificateArn:      cloudformation.Ref("CertificateArn"),
+				AcmCertificateArn:      cloudformation.Ref("CertificateArn"), // FIXME: here!
 				MinimumProtocolVersion: "TLSv1.2_2019",
 				SslSupportMethod:       "sni-only",
 			},

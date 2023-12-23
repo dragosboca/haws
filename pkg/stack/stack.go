@@ -10,31 +10,30 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type Output map[string]string
-
 type Stack struct {
 	Template
 	CloudFormation *cloudformation.CloudFormation
-	Outputs        Output
+	Outputs        map[string]string
 }
 
 func NewStack(template Template) *Stack {
-	var s *session.Session
-	if template.GetRegion() != "" {
-		s = session.Must(session.NewSession(aws.NewConfig().WithRegion(template.GetRegion())))
-	} else {
-		s = session.Must(session.NewSession())
-	}
-	cf := cloudformation.New(s)
-
 	return &Stack{
-		template,
-		cf,
-		make(Output),
+		Template: template,
+		Outputs:  make(map[string]string),
 	}
 }
 
+// Run creates or updates the stack
 func (st *Stack) Run() error {
+	var s *session.Session
+
+	if st.GetRegion() != "" {
+		s = session.Must(session.NewSession(aws.NewConfig().WithRegion(st.Template.GetRegion())))
+	} else {
+		s = session.Must(session.NewSession())
+	}
+	st.CloudFormation = cloudformation.New(s)
+
 	templateBody, err := st.templateJson()
 	if err != nil {
 		return err
@@ -60,6 +59,7 @@ func (st *Stack) Run() error {
 	return st.GetOutputs()
 }
 
+// DryRun prints the template to stdout
 func (st *Stack) DryRun() error {
 	templateBody, err := st.templateJson()
 	if err != nil {
@@ -75,6 +75,7 @@ func (st *Stack) DryRun() error {
 	return nil
 }
 
+// GetOutputs gets the outputs of the stack
 func (st *Stack) GetOutputs() error {
 	stack, err := st.CloudFormation.DescribeStacks(&cloudformation.DescribeStacksInput{StackName: st.GetStackName()})
 	if err != nil {

@@ -1,11 +1,11 @@
-package haws
+package components
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/dragosboca/haws/pkg/resources/bucketpolicy"
-	"github.com/dragosboca/haws/pkg/resources/customtags"
+	"github.com/dragosboca/haws/pkg/components/resources/bucketpolicy"
+	"github.com/dragosboca/haws/pkg/components/resources/customtags"
 	"github.com/dragosboca/haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
@@ -18,10 +18,16 @@ type Bucket struct {
 	Prefix string
 }
 
-func (h *Haws) NewBucket() *Bucket {
+type BucketInput struct {
+	Prefix string
+	Region string
+	Domain string
+}
+
+func NewBucket(b *BucketInput) *Bucket {
 	bucket := &Bucket{
-		Prefix:            h.Prefix,
-		TemplateComponent: stack.NewTemplate(h.Region),
+		Prefix:            b.Prefix,
+		TemplateComponent: stack.NewTemplate(b.Region),
 	}
 
 	doc := bucketpolicy.New("PolicyForCloudfrontPrivateContent")
@@ -42,7 +48,7 @@ func (h *Haws) NewBucket() *Bucket {
 			Type:        "String",
 			Description: "The name of the bucket with the content",
 		},
-		strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", h.Prefix, strings.ReplaceAll(h.Domain, ".", "-"))),
+		strings.ToLower(fmt.Sprintf("haws-%s-%s-bucket", b.Prefix, strings.ReplaceAll(b.Domain, ".", "-"))),
 	)
 
 	bucket.AddResource("oai", &cloudfront.CloudFrontOriginAccessIdentity{

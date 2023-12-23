@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dragosboca/haws/pkg/haws"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -16,36 +17,24 @@ var (
 		Long:  "Generate various config files and print them on the screen",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			h := haws.New(
+
+			h := haws.New(dryRun,
 				viper.GetString("prefix"),
 				viper.GetString("region"),
-				viper.GetString("record"),
 				viper.GetString("zone_id"),
 				viper.GetString("bucket_path"),
-				dryRun,
+				viper.GetString("record"),
 			)
 
-			if err := h.GetStackOutput("certificate", h.NewCertificate()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
+			stacks := []string{"certificate", "bucket", "cloudfront", "user"}
+			for _, stack := range stacks {
+				if err := h.GetStackOutput(stack); err != nil {
+					fmt.Printf("%v\n", err)
+					os.Exit(1)
+				}
 
-			if err := h.GetStackOutput("bucket", h.NewBucket()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
 			}
-
-			if err := h.GetStackOutput("cloudfront", h.NewCdn()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.GetStackOutput("user", h.NewIamUser()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			h.GenerateHugoConfig()
+			h.GenerateHugoConfig(viper.GetString("region"), viper.GetString("bucket_path"))
 		},
 	}
 )

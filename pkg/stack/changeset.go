@@ -27,8 +27,11 @@ func (st *Stack) stackExist() bool {
 	return err == nil
 }
 
+// templateJson returns the template as a JSON string
+// return: string - the template as a JSON string
+// return: error - the error if any
 func (st *Stack) templateJson() (string, error) {
-  	template := st.Build()
+	template := st.Build()
 	templateBody, err := template.JSON()
 	if err != nil {
 		fmt.Printf("Create template error: %s\n", err)
@@ -37,6 +40,11 @@ func (st *Stack) templateJson() (string, error) {
 	return string(templateBody), nil
 }
 
+// initialChangeSet creates the initial changeset
+// param: templateBody - the template body
+// return: csName - the name of the changeset
+// return: csType - the type of the changeset (CREATE or UPDATE)
+// return: error - the error if any
 func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)
@@ -65,6 +73,10 @@ func (st *Stack) initialChangeSet(templateBody string) (string, string, error) {
 	return csName, csType, nil
 }
 
+// waitForChangeSet returns true if the changeset is empty and should be deleted
+// param: csName - the name of the changeset
+// return: bool - true if the changeset is empty and should be deleted
+// return: error - the error if any
 func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 	fmt.Printf("Waiting for the changeset %s creation to complete\n", csName)
 	err := st.CloudFormation.WaitUntilChangeSetCreateComplete(&cloudformation.DescribeChangeSetInput{
@@ -96,6 +108,10 @@ func (st *Stack) waitForChangeSet(csName string) (bool, error) {
 	return false, nil
 }
 
+// executeChangeSet executes the changeset
+// param: csName - the name of the changeset
+// param: csType - the type of the changeset (CREATE or UPDATE)
+// return: error - the error if any
 func (st *Stack) executeChangeSet(csName string, csType string) error {
 	fmt.Printf("Executing change set: %s on stack %s\n", csName, *st.GetStackName())
 	_, err := st.CloudFormation.ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{

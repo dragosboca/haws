@@ -1,11 +1,11 @@
-package haws
+package components
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/dragosboca/haws/pkg/resources/customtags"
-	"github.com/dragosboca/haws/pkg/resources/iampolicy"
+	"github.com/dragosboca/haws/pkg/components/resources/customtags"
+	"github.com/dragosboca/haws/pkg/components/resources/iampolicy"
 	"github.com/dragosboca/haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
@@ -19,16 +19,26 @@ type User struct {
 	Prefix     string
 }
 
-func (h *Haws) NewIamUser() *User {
-	recordName := fmt.Sprintf("%s.%s", h.Record, h.Domain)
-	if h.Record == "" {
-		recordName = h.Domain
+type UserInput struct {
+	Prefix        string
+	Path          string
+	Region        string
+	Domain        string
+	Record        string
+	BucketName    string
+	CloudfrontArn string
+}
+
+func NewIamUser(u *UserInput) *User {
+	recordName := fmt.Sprintf("%s.%s", u.Record, u.Domain)
+	if u.Record == "" {
+		recordName = u.Domain
 	}
 
 	user := &User{
-		Prefix:            h.Prefix,
-		Path:              h.Path,
-		TemplateComponent: stack.NewTemplate(h.Region),
+		Prefix:            u.Prefix,
+		Path:              u.Path,
+		TemplateComponent: stack.NewTemplate(u.Region),
 		recordName:        recordName,
 	}
 
@@ -44,27 +54,27 @@ func (h *Haws) NewIamUser() *User {
 		},
 		Resource: []string{
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(u.BucketName),
 				cloudformation.Ref("Path"),
 				"*",
 			}),
 			cloudformation.Join("/", []string{
-				cloudformation.ImportValue(h.Stacks["bucket"].GetExportName("Name")),
+				cloudformation.ImportValue(u.BucketName),
 				cloudformation.Ref("Path"),
 			}),
-			cloudformation.ImportValue(h.Stacks["cloudfront"].GetExportName("Arn")),
+			cloudformation.ImportValue(u.CloudfrontArn),
 		},
 	})
 
 	user.AddParameter("Path", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The path in the bucket for the origin of the site",
-	}, h.Path)
+	}, u.Path)
 
 	user.AddParameter("Name", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The name of the policy",
-	}, fmt.Sprintf("Haws%s%s", h.Prefix, strings.ReplaceAll(h.Domain, ".", "")))
+	}, fmt.Sprintf("Haws%s%s", u.Prefix, strings.ReplaceAll(u.Domain, ".", "")))
 
 	user.AddResource("user", &iam.User{
 		Policies: []iam.User_Policy{

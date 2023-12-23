@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 
-	"github.com/dragosboca/haws/pkg/haws"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/dragosboca/haws/pkg/haws"
 )
 
 var (
@@ -16,31 +17,15 @@ var (
 		Long:  "Deploy all stacks",
 
 		Run: func(cmd *cobra.Command, args []string) {
-			h := haws.New(
+			h := haws.New(dryRun,
 				viper.GetString("prefix"),
 				viper.GetString("region"),
-				viper.GetString("record"),
 				viper.GetString("zone_id"),
 				viper.GetString("bucket_path"),
-				dryRun,
+				viper.GetString("record"),
 			)
 
-			if err := h.DeployStack("certificate", h.NewCertificate()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.DeployStack("bucket", h.NewBucket()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.DeployStack("cloudfront", h.NewCdn()); err != nil {
-				fmt.Printf("%v\n", err)
-				os.Exit(1)
-			}
-
-			if err := h.DeployStack("user", h.NewIamUser()); err != nil {
+			if err := h.Deploy(); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
@@ -49,7 +34,7 @@ var (
 )
 
 func init() {
-	deployCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Only Simulate the actions")
+	deployCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Simulate the actions")
 
 	rootCmd.AddCommand(deployCmd)
 }

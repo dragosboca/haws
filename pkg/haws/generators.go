@@ -21,20 +21,28 @@ type deployment struct {
 	OriginPath   string
 }
 
-func (h *Haws) getOutputByName(stack string, output string) string {
-	return h.Stacks[stack].Outputs[h.Stacks[stack].GetExportName(output)]
-}
+func (h *Haws) GenerateHugoConfig(region string, path string) {
+	bucketName, err := h.GetOutputByName("bucket", "Name")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
 
-func (h *Haws) GenerateHugoConfig() {
+	cloudFrontId, err := h.GetOutputByName("cloudfront", "CloudFrontId")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
 	deploymentConfig := deployment{
-		BucketName:   h.getOutputByName("bucket", "Name"),
-		Region:       h.Region,
-		CloudFrontId: h.getOutputByName("cloudfront", "CloudFrontId"),
-		OriginPath:   fmt.Sprintf("%s/", strings.Trim(h.Path, "/")),
+		BucketName:   bucketName,
+		Region:       region,
+		CloudFrontId: cloudFrontId,
+		OriginPath:   fmt.Sprintf("%s/", strings.Trim(path, "/")),
 	}
 	t := template.Must(template.New("deployment").Parse(hugoConfig))
 	fmt.Printf("\n\n\n Use The folowing minimal configuration for hugo deployment\n")
-	err := t.Execute(os.Stdout, deploymentConfig)
+	err = t.Execute(os.Stdout, deploymentConfig)
 	if err != nil {
 		fmt.Printf("Error executing template: %s", err)
 		os.Exit(1)

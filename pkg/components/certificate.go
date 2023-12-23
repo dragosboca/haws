@@ -1,10 +1,10 @@
-package haws
+package components
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/dragosboca/haws/pkg/resources/customtags"
+	"github.com/dragosboca/haws/pkg/components/resources/customtags"
 	"github.com/dragosboca/haws/pkg/stack"
 
 	"github.com/awslabs/goformation/v4/cloudformation"
@@ -16,21 +16,28 @@ type Certificate struct {
 	Prefix string
 }
 
-func (h *Haws) NewCertificate() *Certificate {
+type CertificateInput struct {
+	Prefix string
+	Region string
+	Domain string
+	ZoneId string
+}
+
+func NewCertificate(c *CertificateInput) *Certificate {
 	certificate := &Certificate{
-		Prefix:            h.Prefix,
+		Prefix:            c.Prefix,
 		TemplateComponent: stack.NewTemplate("us-east-1"),
 	}
 
 	certificate.AddParameter("Domain", cloudformation.Parameter{
 		Type:        "String",
 		Description: "Domain for which we generate the certificate",
-	}, h.Domain)
+	}, c.Domain)
 
 	certificate.AddParameter("ZoneId", cloudformation.Parameter{
 		Type:        "String",
 		Description: "The Route53 zone used for domain validation",
-	}, h.ZoneId)
+	}, c.ZoneId)
 
 	certificate.AddResource("HugoSslCertificate", &certificatemanager.Certificate{
 		DomainName: cloudformation.Ref("Domain"),
